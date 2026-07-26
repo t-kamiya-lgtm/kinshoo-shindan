@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTEIN MONSTER｜SNS投稿ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" onerror="this.remove()">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">PM</span>
+    <div>
+      <h1>SNS投稿ダッシュボード</h1>
+      <p class="brand-sub">PROTEIN MONSTER / SOVA</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <label class="date-pick">
+      <span>対象日</span>
+      <input type="date" id="date-input">
+    </label>
+    <button class="btn ghost" id="btn-today">今日</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-view="proposals">今日の提案</button>
+  <button class="tab" data-view="library">画像ライブラリ <span class="badge" id="lib-badge">0</span></button>
+  <button class="tab" data-view="spec">スペック</button>
+  <button class="tab" data-view="log">投稿ログ</button>
+  <button class="tab" data-view="settings">設定</button>
+</nav>
+
+<main>
+  <!-- ============ 今日の提案 ============ -->
+  <section class="view active" id="view-proposals">
+    <div class="notice" id="no-images-notice" hidden>
+      画像ライブラリが空です。<b>「画像ライブラリ」タブ</b>で Drive のフォルダをドラッグ＆ドロップして取り込んでください。取り込むまで画像プレビューは表示されません。
+    </div>
+    <div id="proposal-list" class="proposal-list"></div>
+  </section>
+
+  <!-- ============ 画像ライブラリ ============ -->
+  <section class="view" id="view-library">
+    <div class="dropzone" id="dropzone">
+      <p class="dz-title">画像をここにドラッグ＆ドロップ</p>
+      <p class="dz-sub">
+        <a href="https://drive.google.com/drive/folders/1uXFEWTMOK9SUzummPzaUfwp61pcEpenl" target="_blank" rel="noopener">Drive の素材フォルダ</a>
+        をダウンロードして、フォルダごと放り込んでください。ファイル名でカタログと自動照合します。
+      </p>
+      <label class="btn">
+        ファイルを選ぶ
+        <input type="file" id="file-input" accept="image/*" multiple hidden>
+      </label>
+      <p class="dz-note">画像はこの端末のブラウザ内（IndexedDB）に保存されます。どこにもアップロードされません。</p>
+    </div>
+
+    <div class="lib-toolbar">
+      <div class="lib-stats" id="lib-stats"></div>
+      <div class="lib-filters">
+        <button class="chip-btn active" data-filter="all">すべて</button>
+        <button class="chip-btn" data-filter="stored">取込済み</button>
+        <button class="chip-btn" data-filter="missing">未取込</button>
+        <button class="chip-btn" data-filter="untagged">未タグ</button>
+      </div>
+    </div>
+
+    <div class="lib-grid" id="lib-grid"></div>
+  </section>
+
+  <!-- ============ スペック ============ -->
+  <section class="view" id="view-spec">
+    <div id="spec-content"></div>
+  </section>
+
+  <!-- ============ 投稿ログ ============ -->
+  <section class="view" id="view-log">
+    <div id="log-content"></div>
+  </section>
+
+  <!-- ============ 設定 ============ -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2>画像の見た目</h2>
+      <label class="field">
+        <span>アクセントカラー（数値・見出しの色）</span>
+        <input type="color" id="accent-input">
+      </label>
+      <label class="field">
+        <span>Instagram の書き出しサイズ</span>
+        <select id="ig-aspect">
+          <option value="4:5">縦 4:5（1080×1350）推奨</option>
+          <option value="1:1">正方形 1:1（1080×1080）</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>X の書き出しサイズ</span>
+        <select id="x-aspect">
+          <option value="16:9">横 16:9（1200×675）推奨</option>
+          <option value="1:1">正方形 1:1（1080×1080）</option>
+          <option value="4:5">縦 4:5（1080×1350）</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>チェックの厳しさ</h2>
+      <label class="check">
+        <input type="checkbox" id="opt-pr">
+        <span>タイアップ投稿として運用する（#PR の付け忘れを警告する）</span>
+      </label>
+      <p class="hint">自社アカウントからの自社商品投稿では通常オフのままで構いません。インフルエンサー投稿の再掲や、案件としての投稿を行う場合にオンにしてください。</p>
+    </div>
+
+    <div class="card">
+      <h2>毎朝の通知</h2>
+      <p class="hint" id="cron-hint"></p>
+    </div>
+
+    <div class="card danger">
+      <h2>データ</h2>
+      <p class="hint">タグ・編集内容・投稿ログは、このブラウザにのみ保存されています。</p>
+      <div class="row">
+        <button class="btn ghost" id="btn-export">設定とタグを書き出す</button>
+        <label class="btn ghost">設定とタグを読み込む<input type="file" id="import-json" accept="application/json" hidden></label>
+        <button class="btn danger" id="btn-clear">画像ライブラリを空にする</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

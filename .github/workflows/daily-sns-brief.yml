@@ -1,0 +1,62 @@
+name: SNS投稿案の朝メール
+
+# 毎朝 8:00 JST（= 前日 23:00 UTC）に、その日の投稿案をメールで送る。
+# 提案は日付をシードに生成されるので、メール本文とダッシュボードの表示は必ず一致する。
+on:
+  schedule:
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '対象日（YYYY-MM-DD／空なら今日）'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    # SMTP の Secrets が未設定のうちは送信ステップがスキップされる（ワークフロー自体は成功する）。
+    env:
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 生成エンジンの自己診断（法令チェック・文字数）
+        run: node sns/selftest.js
+
+      - name: メール本文を組み立てる
+        env:
+          BRIEF_DATE: ${{ github.event.inputs.date }}
+        run: |
+          echo "DATE_JST=$(TZ=Asia/Tokyo date +%Y-%m-%d)" >> "$GITHUB_ENV"
+          node scripts/daily-brief.mjs > brief.html
+          wc -c brief.html
+
+      - name: 生成物を保存（メール未設定でも中身を確認できる）
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-brief-${{ env.DATE_JST }}
+          path: brief.html
+          retention-days: 14
+
+      - name: メール送信
+        if: env.MAIL_TO != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: 'PROTEIN MONSTER｜${{ env.DATE_JST }} の投稿案'
+          to: ${{ secrets.MAIL_TO }}
+          from: PROTEIN MONSTER SNS <${{ secrets.MAIL_USERNAME }}>
+          html_body: file://brief.html
+          convert_markdown: false
