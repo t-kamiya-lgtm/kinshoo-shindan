@@ -7,8 +7,19 @@
 import { generateDailyPlan, jstDateKey } from '../sns/engine.js';
 
 const dateKey = process.env.BRIEF_DATE || jstDateKey();
-const dashboardUrl = process.env.DASHBOARD_URL || '';
 const plan = generateDailyPlan(dateKey);
+
+// リンク先。vars.DASHBOARD_URL が未設定でも GitHub Pages の既定URLに落とす。
+// （Pages が未公開ならリンクは 404 になるが、リンク自体を欠落させるよりは辿れる）
+function resolveDashboardUrl() {
+  const explicit = (process.env.DASHBOARD_URL || '').trim();
+  if (explicit) return explicit;
+  const repo = process.env.GITHUB_REPOSITORY || '';
+  const [owner, name] = repo.split('/');
+  if (owner && name) return `https://${owner}.github.io/${name}/sns/`;
+  return '';
+}
+const dashboardUrl = resolveDashboardUrl();
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -101,6 +101,44 @@ function patchEdit(postId, patch) {
   save(LS.edits, edits);
 }
 
+/* ============================ 直近の使用状況 ============================ */
+//
+// 投稿ログを見て「最近使った写真・最近使った書き出し」を避ける。
+// これがないと、写真の枚数が少ないうちは同じ絵が短期間で何度も出てしまう。
+
+const RECENT_IMAGE_DAYS = 14;
+const RECENT_HOOK_DAYS = 30;
+
+const daysAgo = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000;
+
+/** 直近に使った画像キー（新しい順） */
+function recentImageKeys(days = RECENT_IMAGE_DAYS) {
+  return postLog.entries
+    .filter((e) => e.image && daysAgo(e.postedAt) <= days)
+    .map((e) => e.image);
+}
+
+/** 画像ごとの使用回数と最終使用日 */
+function imageUsage() {
+  const map = new Map();
+  for (const e of postLog.entries) {
+    if (!e.image) continue;
+    const cur = map.get(e.image) || { count: 0, lastAt: null };
+    cur.count++;
+    if (!cur.lastAt || e.postedAt > cur.lastAt) cur.lastAt = e.postedAt;
+    map.set(e.image, cur);
+  }
+  return map;
+}
+
+/** 同じ書き出しを直近に使っていないか */
+function recentHookUse(firstLine, days = RECENT_HOOK_DAYS) {
+  if (!firstLine) return null;
+  return postLog.entries.find(
+    (e) => daysAgo(e.postedAt) <= days && e.text.split('\n')[0].trim() === firstLine.trim()
+  ) || null;
+}
+
 /* ============================ 提案ビュー ============================ */
 
 const X_SAFE = 140;
@@ -112,7 +150,9 @@ async function renderProposals() {
   $('#no-images-notice').hidden = stored.length > 0;
 
   const plan = generateDailyPlan(dateKey, variants);
-  const usedKeys = [];
+  // 同日の2本で同じ写真を使わないうえ、直近に投稿した写真も避ける。
+  // 候補が尽きた場合は pickImage が全体から選び直すので、行き止まりにはならない。
+  const usedKeys = recentImageKeys();
 
   for (const raw of plan.posts) {
     const post = withEdits(raw);
@@ -137,6 +177,11 @@ function buildPostCard(post, imageItem) {
 
   const card = el('div', { class: 'post-card' });
 
+  // 直近に同じ書き出し・同じ写真を使っていないかを見て、注意を出す
+  const hookDup = recentHookUse(post.caption.split('\n')[0]);
+  const usage = imageUsage().get(imageItem ? imageItem.key : '');
+  const imageDup = usage && daysAgo(usage.lastAt) <= RECENT_IMAGE_DAYS;
+
   /* --- ヘッダ --- */
   card.append(
     el('div', { class: 'post-head' },
@@ -145,7 +190,9 @@ function buildPostCard(post, imageItem) {
         el('span', { class: 'chip accent' }, post.axisLabel),
         el('span', { class: 'chip' }, post.skuLabel),
         el('span', { class: 'chip' }, isComposite ? '写真＋文字合成' : '写真そのまま'),
-        posted ? el('span', { class: 'chip accent' }, '投稿済み') : null
+        posted ? el('span', { class: 'chip accent' }, '投稿済み') : null,
+        hookDup ? el('span', { class: 'chip dup' }, `書き出し重複（${hookDup.dateKey}）`) : null,
+        imageDup ? el('span', { class: 'chip dup' }, `この写真は${Math.round(daysAgo(usage.lastAt))}日前にも使用`) : null
       )
     )
   );
@@ -392,17 +439,20 @@ async function renderLibrary() {
   const rows = await lib.catalogStatus();
   const grid = $('#lib-grid');
   grid.replaceChildren();
+  const usage = imageUsage();
 
   const storedCount = rows.filter((r) => r.stored).length;
   const taggedCount = rows.filter((r) => r.stored && r.tags.length).length;
+  const unusedCount = rows.filter((r) => r.stored && !usage.has(r.file)).length;
   $('#lib-stats').textContent =
-    `カタログ ${IMAGE_CATALOG.length}点／取込済み ${storedCount}点／タグ付き ${taggedCount}点`;
+    `カタログ ${IMAGE_CATALOG.length}点／取込済み ${storedCount}点／タグ付き ${taggedCount}点／未使用 ${unusedCount}点`;
   $('#lib-badge').textContent = String(storedCount);
 
   const filtered = rows.filter((r) => {
     if (libFilter === 'stored') return !!r.stored;
     if (libFilter === 'missing') return !r.stored;
     if (libFilter === 'untagged') return r.stored && r.tags.length === 0;
+    if (libFilter === 'unused') return r.stored && !usage.has(r.file);
     return true;
   });
 
@@ -419,6 +469,13 @@ async function renderLibrary() {
       thumb.append(el('div', {}, '未取込'));
     }
     thumb.append(el('span', { class: `lib-status ${r.stored ? 'stored' : 'missing'}` }, r.stored ? '取込済み' : '未取込'));
+
+    // 使用回数。0回のものが一目でわかるようにして、写真の使い回しを避ける。
+    const u = usage.get(r.file);
+    if (r.stored) {
+      thumb.append(el('span', { class: `lib-uses ${u ? '' : 'unused'}` },
+        u ? `${u.count}回使用` : '未使用'));
+    }
 
     const body = el('div', { class: 'lib-body' }, el('div', { class: 'lib-name' }, r.file));
 

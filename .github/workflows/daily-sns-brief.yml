@@ -20,7 +20,10 @@ jobs:
     # SMTP の Secrets が未設定のうちは送信ステップがスキップされる（ワークフロー自体は成功する）。
     env:
       MAIL_TO: ${{ secrets.MAIL_TO }}
+      # vars.DASHBOARD_URL が未設定でも、GitHub Pages の既定URLを組み立てて
+      # メールのボタンがリンク切れにならないようにする（daily-brief.mjs 側で補完）。
       DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+      GITHUB_REPOSITORY_OWNER_NAME: ${{ github.repository_owner }}
     steps:
       - uses: actions/checkout@v4
 
