@@ -15,7 +15,8 @@ export const PRODUCTS = {
     origin: '中国',
     storage: '直射日光・高温多湿を避け、涼しい場所に保存',
     ingredients: 'えんどう豆タンパク粉、植物性たん白、小麦粉、食塩',
-    boilMin: '3〜5',
+    boilMin: '3〜5',        // 表示用
+    boilRange: [3, 5],     // 計算用。レシピの調理時間の換算に使う
     cookedWeightG: 90,
     nutrition: {
       kcal: 201.3,
@@ -55,7 +56,8 @@ export const PRODUCTS = {
     origin: '中国',
     storage: '直射日光・高温多湿を避け、涼しい場所に保存',
     ingredients: 'そば粉、小麦たん白、えんどう豆タンパク粉、小麦粉、えんどう豆食物繊維',
-    boilMin: '3〜5',
+    boilMin: '3〜5',        // 表示用
+    boilRange: [3, 5],     // 計算用。レシピの調理時間の換算に使う
     cookedWeightG: 150,
     nutrition: {
       kcal: 177,

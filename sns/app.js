@@ -6,7 +6,7 @@ import { TAG_VOCAB, DRIVE_FOLDER_URL, IMAGE_CATALOG } from './data/images.js';
 import * as lib from './library.js';
 import * as composer from './composer.js';
 import * as recipeArt from './recipe.js';
-import { RECIPES, OUTRO, SWIPE_BAR, getRecipe } from './data/recipes.js';
+import { RECIPES, OUTRO, SWIPE_BAR, getRecipe, resolveRecipe } from './data/recipes.js';
 
 /* ============================ 状態 ============================ */
 
@@ -560,8 +560,12 @@ async function renderRecipeView() {
     return;
   }
 
-  const recipe = getRecipe(recipeState.id) || RECIPES[0];
-  recipeState.id = recipe.id;
+  const base = getRecipe(recipeState.id) || RECIPES[0];
+  recipeState.id = base.id;
+  // ゆで時間を商品表示の「3〜5分」に差し替え、調理時間も換算した状態で扱う。
+  // 画像とキャプションが同じ数字を使うよう、ここで一度だけ解決する。
+  const product = PRODUCTS[base.sku];
+  const recipe = resolveRecipe(base, product);
 
   // レシピの選択肢
   sel.replaceChildren(...RECIPES.map((r) => el('option', {
@@ -608,7 +612,6 @@ async function renderRecipeView() {
   }
 
   // キャプション
-  const product = PRODUCTS[recipe.sku];
   const generated = recipeArt.buildRecipeCaption(recipe, product);
   const ta = $('#recipe-caption');
   ta.value = recipeState.captions[recipe.id] ?? generated;
