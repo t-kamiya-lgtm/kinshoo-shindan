@@ -29,7 +29,8 @@ const LS = {
   settings: 'pm-sns:settings',
   edits: 'pm-sns:edits',
   log: 'pm-sns:log',
-  recipe: 'pm-sns:recipe'
+  recipe: 'pm-sns:recipe',
+  sku: 'pm-sns:sku'
 };
 
 const defaultSettings = {
@@ -66,6 +67,8 @@ if (!recipeState.captions) recipeState.captions = {};
 let dateKey = jstDateKey();
 let variants = { ig: 0, x: 0 };
 let stored = [];
+// 日付・媒体ごとの SKU 指定。variant を含めないので「別案」を出しても指定は残る。
+let skuOverrides = load(LS.sku, {});
 // 支給ロゴ。描き起こさず、登録されたファイルをそのまま合成に使う。
 let logos = { onPhoto: null, onLight: null, hasOnPhoto: false, hasOnLight: false };
 
@@ -198,13 +201,56 @@ function recentHookUse(firstLine, days = RECENT_HOOK_DAYS) {
 const X_SAFE = 140;
 const IG_MAX = 2200;
 
+/* --- SKU の指定 ---
+   投稿は必ずどちらか一方の商品に特化させる。既定は日付から自動で決まるが、
+   ここで指定すると、訴求軸・テンプレート・画像プランはそのままに商品だけが
+   入れ替わる。指定は日付＋媒体に紐づけるので「別案」を出しても残る。 */
+
+const skuKeyOf = (platform) => `${dateKey}-${platform}`;
+
+function forcedSkus() {
+  return { ig: skuOverrides[skuKeyOf('ig')] || null, x: skuOverrides[skuKeyOf('x')] || null };
+}
+
+/**
+ * SKU を切り替える。本文はその商品の数値で作り直すので、
+ * 手で直した本文・タグ・画像の文字が残っていると噛み合わなくなる。
+ * 残っている場合だけ確認したうえで捨てる。
+ */
+function setSku(post, skuId) {
+  const sync = settings.syncPlatforms;
+  const targets = sync ? ['ig', 'x'] : [post.platform];
+
+  const dirty = targets.some((pf) => {
+    const e = edits[`${dateKey}-${pf}-${variants[pf] || 0}`];
+    return e && (e.caption !== undefined || e.hashtags !== undefined || e.overlay !== undefined);
+  });
+  if (dirty && !confirm('手を入れた本文・タグ・画像の文字は、商品に合わせて作り直すため破棄されます。切り替えますか？')) {
+    return;
+  }
+
+  for (const pf of targets) {
+    if (skuId) skuOverrides[skuKeyOf(pf)] = skuId;
+    else delete skuOverrides[skuKeyOf(pf)];
+    // 商品が変わると本文の数値も写真の相性も変わるので、その媒体の編集内容を戻す
+    const id = `${dateKey}-${pf}-${variants[pf] || 0}`;
+    if (edits[id]) {
+      const { caption, hashtags, overlay, imageKey, ...keep } = edits[id];
+      edits[id] = keep;
+    }
+  }
+  save(LS.sku, skuOverrides);
+  save(LS.edits, edits);
+  refresh();
+}
+
 async function renderProposals() {
   const list = $('#proposal-list');
   list.replaceChildren();
   $('#no-images-notice').hidden = stored.length > 0;
 
   const sync = settings.syncPlatforms;
-  const plan = generateDailyPlan(dateKey, variants, { sync });
+  const plan = generateDailyPlan(dateKey, variants, { sync, forceSku: forcedSkus() });
   // 直近に投稿した写真は避ける。候補が尽きた場合は pickImage が全体から
   // 選び直すので、行き止まりにはならない。
   const usedKeys = recentImageKeys();
@@ -304,7 +350,28 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
   );
   if (!stored.length) imgSelect.append(el('option', {}, '（画像なし）'));
 
+  /** どちらの商品で作るか。切り替えると本文も画像の文字も作り直される。 */
+  function buildSkuPicker() {
+    const forced = skuOverrides[skuKeyOf(post.platform)] || null;
+    const btn = (id, label) => el('button', {
+      class: `btn small ${post.sku === id ? '' : 'ghost'}`,
+      onclick: () => setSku(post, id)
+    }, label);
+    return el('div', { class: 'sku-picker' },
+      el('span', { class: 'sku-label' }, '商品'),
+      btn('monster', 'モンスター'),
+      btn('sova', 'ソバ'),
+      forced
+        ? el('button', { class: 'btn ghost small', onclick: () => setSku(post, null) }, '自動に戻す')
+        : el('span', { class: 'hint' }, '自動（日付で決定）'),
+      settings.syncPlatforms
+        ? el('span', { class: 'hint' }, '※2媒体そろえる設定のため、両方に反映されます')
+        : null
+    );
+  }
+
   const controls = el('div', { class: 'img-controls' },
+    buildSkuPicker(),
     el('div', { class: 'img-meta' }, imageItem ? imageItem.key : '—'),
     imgSelect,
     el('div', { class: 'row' },
@@ -1035,7 +1102,7 @@ function renderSettings() {
   $('#opt-sync').onchange = (e) => { settings.syncPlatforms = e.target.checked; save(LS.settings, settings); refresh(); };
 
   $('#btn-export').onclick = () => {
-    const data = { settings, edits, log: postLog, tags: lib.loadTags() };
+    const data = { settings, edits, log: postLog, tags: lib.loadTags(), sku: skuOverrides };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     composer.download(blob, `pm-sns-settings-${jstDateKey()}.json`);
   };
@@ -1048,6 +1115,7 @@ function renderSettings() {
       if (data.edits) { edits = data.edits; save(LS.edits, edits); }
       if (data.log) { postLog = data.log; save(LS.log, postLog); }
       if (data.tags) lib.saveTags(data.tags);
+      if (data.sku) { skuOverrides = data.sku; save(LS.sku, skuOverrides); }
       toast('読み込みました');
       refresh();
     } catch { toast('読み込めませんでした'); }

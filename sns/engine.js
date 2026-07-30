@@ -139,8 +139,11 @@ function buildImagePlan(rng, { product, axis, platform }) {
  * @param {boolean} sync true なら媒体をシードに含めない。
  *   こうすると Instagram と X で 訴求軸・SKU・フック・画像の文字が一致し、
  *   「同じ投稿の媒体別バージョン」になる。false なら媒体ごとに独立して振る。
+ * @param {string|null} forceSku 'monster' | 'sova' を渡すと SKU を固定する。
+ *   乱数は通常どおり引いたうえで結果だけ差し替えるので、訴求軸・テンプレート・
+ *   画像プランは変わらず、商品だけが入れ替わった同じ投稿になる。
  */
-function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true) {
+function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, forceSku = null) {
   const seed = sync
     ? `${dateKey}|${variant}|${salt}`
     : `${dateKey}|${platform}|${variant}|${salt}`;
@@ -154,6 +157,9 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true) {
   let skuId;
   if (axisDef.skuBias && rng() < 0.7) skuId = axisDef.skuBias;
   else skuId = rng() < 0.5 ? 'monster' : 'sova';
+  // 指定があれば上書きする。乱数を引いたあとに差し替えるのは、
+  // 以降の生成（画像プラン・コピー）の並びを指定の有無で変えないため。
+  if (forceSku && PRODUCTS[forceSku]) skuId = forceSku;
   const product = PRODUCTS[skuId];
 
   // 画像プランを先に決めるのは、乱数の消費順を媒体間でそろえるため。
@@ -190,15 +196,16 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true) {
  */
 export function generateDailyPlan(dateKey = jstDateKey(), variants = { ig: 0, x: 0 }, opts = {}) {
   const sync = opts.sync !== false; // 既定は「そろえる」
-  const ig = buildProposal(dateKey, 'ig', variants.ig || 0, 0, sync);
-  let x = buildProposal(dateKey, 'x', variants.x || 0, 0, sync);
+  const force = opts.forceSku || {}; // { ig: 'monster'|'sova', x: ... }
+  const ig = buildProposal(dateKey, 'ig', variants.ig || 0, 0, sync, force.ig || null);
+  let x = buildProposal(dateKey, 'x', variants.x || 0, 0, sync, force.x || null);
 
   // 独立生成のときだけ、2本が同じ書き出しになるのを避ける。
   // そろえる設定では一致しているのが正しい状態なので何もしない。
   if (!sync) {
     const firstLine = (p) => p.caption.split('\n')[0];
     for (let salt = 1; salt <= 8 && firstLine(x) === firstLine(ig); salt++) {
-      x = buildProposal(dateKey, 'x', variants.x || 0, salt, false);
+      x = buildProposal(dateKey, 'x', variants.x || 0, salt, false, force.x || null);
     }
   }
 
