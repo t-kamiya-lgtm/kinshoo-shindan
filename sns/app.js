@@ -985,22 +985,77 @@ function renderSettings() {
 
 /* ============================ 起動 ============================ */
 
+/**
+ * 描画に失敗したとき、原因をその画面の中に出す。
+ * コンソールを開いてもらわないと原因が分からない状態が続いたので、
+ * エラー本文とスタックを画面に出し、そのままコピーできるようにした。
+ */
+function showViewError(viewSel, name, err) {
+  const view = $(viewSel);
+  if (!view) return;
+  const detail = [
+    `${name} の描画に失敗`,
+    `${err && err.name ? err.name : 'Error'}: ${err && err.message ? err.message : String(err)}`,
+    err && err.stack ? String(err.stack).split('\n').slice(0, 6).join('\n') : ''
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let box = $('.view-error', view);
+  if (!box) {
+    box = el('div', { class: 'view-error notice danger' });
+    view.prepend(box);
+  }
+  box.textContent = '';
+  box.append(
+    el('p', {}, el('b', {}, `${name} を表示できませんでした。`)),
+    el('pre', { class: 'view-error-detail' }, detail),
+    el(
+      'div',
+      { class: 'row' },
+      el(
+        'button',
+        {
+          class: 'btn ghost',
+          onclick: async () => {
+            try {
+              await navigator.clipboard.writeText(detail);
+              toast('エラー内容をコピーしました');
+            } catch {
+              toast('コピーできませんでした（文字を選んでコピーしてください）');
+            }
+          }
+        },
+        'このエラーをコピー'
+      ),
+      el('button', { class: 'btn ghost', onclick: () => refresh() }, 'もう一度読み込む')
+    )
+  );
+}
+
+function clearViewError(viewSel) {
+  const box = $(`${viewSel} .view-error`);
+  if (box) box.remove();
+}
+
 async function refresh() {
   // どこか1つが失敗しても、残りの画面は描けるようにする。
   const steps = [
-    ['今日の提案', renderProposals],
-    ['画像ライブラリ', renderLibrary],
-    ['レシピ投稿', renderRecipeView],
-    ['スペック', renderSpec],
-    ['投稿ログ', renderLog],
-    ['設定', renderSettings]
+    ['今日の提案', '#view-proposals', renderProposals],
+    ['画像ライブラリ', '#view-library', renderLibrary],
+    ['レシピ投稿', '#view-recipe', renderRecipeView],
+    ['スペック', '#view-spec', renderSpec],
+    ['投稿ログ', '#view-log', renderLog],
+    ['設定', '#view-settings', renderSettings]
   ];
-  for (const [name, fn] of steps) {
+  for (const [name, viewSel, fn] of steps) {
     try {
       await fn();
+      clearViewError(viewSel);
     } catch (err) {
       console.error(`${name} の描画に失敗しました:`, err);
-      toast(`${name} の表示に失敗しました（コンソールを確認してください）`);
+      showViewError(viewSel, name, err);
+      toast(`${name} の表示に失敗しました（画面のエラー内容をご覧ください）`);
     }
   }
   document.documentElement.style.setProperty('--accent', settings.accent);

@@ -238,6 +238,19 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 }
 .card.danger { border-color: rgba(255, 107, 107, 0.3); }
 
+/* 描画に失敗したときに、原因をその場に出すための枠 */
+.notice.danger {
+  background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.4);
+  color: var(--bad, #ff6b6b);
+}
+.view-error-detail {
+  margin: 8px 0; padding: 10px 12px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35); color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+  max-height: 220px; overflow: auto; user-select: text;
+}
+
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 500; }
