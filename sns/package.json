@@ -2,5 +2,9 @@
   "name": "protein-monster-sns",
   "private": true,
   "type": "module",
-  "description": "PROTEIN MONSTER SNS 投稿自動生成ダッシュボード"
+  "description": "PROTEIN MONSTER SNS 投稿自動生成ダッシュボード",
+  "scripts": {
+    "build": "node ../scripts/build-single.mjs",
+    "selftest": "node selftest.js"
+  }
 }

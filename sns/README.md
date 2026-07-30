@@ -238,8 +238,33 @@ sns/
     copy.js         フック・本文・締め・タグ・画像コピー
     images.js       Drive 素材のカタログとタグ語彙
     recipes.js      レシピ原稿
+  dist/
+    index.html      公開用（1ファイル版・生成物）
 scripts/
   daily-brief.mjs   朝メールの本文を組み立てる
+  build-single.mjs  1ファイル版 index.html を作る
 .github/workflows/
   daily-sns-brief.yml  毎朝 8:00 JST の実行
 ```
+
+## 9. 公開用の1ファイル版
+
+公開サイトに置くのは、`sns/dist/index.html` の**1ファイルだけ**です。
+CSS と全モジュールをこの中に埋め込んでいます。
+
+```
+cd sns && npm run build      # → sns/dist/index.html
+```
+
+**なぜ1ファイルなのか。** GitHub の「Upload files」で10個以上のファイルを手作業で
+上げていたとき、`index.html` の中身が `composer.js` の内容に入れ替わり、サイトが
+ソースコードを表示する状態になりました。アップロードするファイルが1つなら、
+名前と中身が入れ違う事故は起こりません。
+
+ビルドはソースを一切書き換えません。各モジュールの中身をそのまま文字列として
+埋め込み、ブラウザ側で `Blob` から `import` し直すだけなので、ES モジュールとしての
+挙動は元のままです。書き出す前に、出力から取り出し直したソースが元ファイルと
+1バイト単位で一致するかを検証しています（`$$` が `$` に化ける類の事故を防ぐため）。
+
+`engine.js` などの個別ファイルは、朝メール（Node 実行）と `selftest.js` が使うので
+リポジトリに残します。ブラウザはそれらを読みません。
