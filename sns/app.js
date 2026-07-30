@@ -66,6 +66,8 @@ if (!recipeState.captions) recipeState.captions = {};
 let dateKey = jstDateKey();
 let variants = { ig: 0, x: 0 };
 let stored = [];
+// 支給ロゴ。描き起こさず、登録されたファイルをそのまま合成に使う。
+let logos = { onPhoto: null, onLight: null, hasOnPhoto: false, hasOnLight: false };
 
 /* ============================ 小道具 ============================ */
 
@@ -286,7 +288,8 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
     await composer.render(canvas, bmp, {
       aspect,
       overlay: isComposite ? post.image.overlay : null,
-      accent: settings.accent
+      accent: settings.accent,
+      logo: logos.onPhoto
     });
   };
   redraw();
@@ -636,7 +639,8 @@ async function renderRecipeView() {
     slidesBox.append(el('div', { class: 'recipe-slide' },
       el('div', { class: 'slide-label' }, label), canvas));
     await recipeArt.renderSlide(canvas, slide, recipe, {
-      heroImg, thumbs, accent: settings.accent, outro: OUTRO, swipeBar: SWIPE_BAR
+      heroImg, thumbs, accent: settings.accent, outro: OUTRO, swipeBar: SWIPE_BAR,
+      logo: logos.onLight
     });
   }
 
@@ -939,7 +943,81 @@ function renderLog() {
 
 /* ============================ 設定 ============================ */
 
+/**
+ * ロゴを読み直して、合成に使える形（ビットマップ）にしておく。
+ * ファイルは一切加工しない。合成時に縦横比のまま拡縮するだけ。
+ */
+async function reloadLogos() {
+  const rec = await lib.loadLogos();
+  const toBitmap = async (r) => (r && r.blob ? composer.loadBitmap(r.blob) : null);
+  logos = {
+    onPhoto: await toBitmap(rec.onPhoto),
+    onLight: await toBitmap(rec.onLight),
+    hasOnPhoto: rec.hasOnPhoto,
+    hasOnLight: rec.hasOnLight,
+    names: { onPhoto: rec.onPhoto ? rec.onPhoto.name : '', onLight: rec.onLight ? rec.onLight.name : '' }
+  };
+}
+
+/** 設定タブのロゴ登録欄を組む */
+function renderLogoSettings() {
+  const box = $('#logo-slots');
+  box.textContent = '';
+  for (const [slot, label] of Object.entries(lib.LOGO_SLOTS)) {
+    const has = slot === 'onPhoto' ? logos.hasOnPhoto : logos.hasOnLight;
+    const bmp = logos[slot];
+    const borrowed = !has && bmp; // もう片方を流用している状態
+
+    const preview = el('div', { class: `logo-preview ${slot}` });
+    if (bmp) {
+      const c = el('canvas');
+      const h = 56;
+      c.width = Math.max(1, Math.round((bmp.width / bmp.height) * h));
+      c.height = h;
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      preview.append(c);
+    } else {
+      preview.append(el('span', { class: 'hint' }, '未登録（文字で組んだ代用を描きます）'));
+    }
+
+    box.append(el('div', { class: 'logo-slot' },
+      el('div', { class: 'logo-slot-head' },
+        el('b', {}, label),
+        borrowed ? el('span', { class: 'chip' }, 'もう一方を流用中') : null,
+        has && bmp ? el('span', { class: 'chip' }, `${bmp.width}×${bmp.height}px`) : null),
+      preview,
+      el('div', { class: 'row' },
+        el('label', { class: 'btn ghost' }, has ? 'ロゴを差し替える' : 'ロゴを登録する',
+          el('input', {
+            type: 'file', accept: 'image/png,image/svg+xml,image/webp,image/*', hidden: 'hidden',
+            onchange: async (e) => {
+              const file = e.target.files[0];
+              e.target.value = '';
+              if (!file) return;
+              if (/svg/i.test(file.type)) {
+                toast('SVG は canvas に描けないことがあります。PNG（背景透過）をおすすめします');
+              }
+              await lib.saveLogo(slot, file);
+              await reloadLogos();
+              toast('ロゴを登録しました');
+              await refresh();
+            }
+          })),
+        has ? el('button', {
+          class: 'btn ghost',
+          onclick: async () => {
+            await lib.removeLogo(slot);
+            await reloadLogos();
+            toast('ロゴを削除しました');
+            await refresh();
+          }
+        }, '削除') : null)
+    ));
+  }
+}
+
 function renderSettings() {
+  renderLogoSettings();
   $('#accent-input').value = settings.accent;
   $('#ig-aspect').value = settings.igAspect;
   $('#x-aspect').value = settings.xAspect;
@@ -1096,6 +1174,11 @@ async function boot() {
     refresh();
   };
   stored = await lib.listStored();
+  try {
+    await reloadLogos();
+  } catch (err) {
+    console.warn('ロゴを読み込めませんでした:', err);
+  }
   await refresh();
 }
 

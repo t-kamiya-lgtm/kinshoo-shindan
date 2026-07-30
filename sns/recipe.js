@@ -66,8 +66,17 @@ function drawSplitLine(ctx, text, accentPart, cx, y, size, baseColor, accentColo
   return total;
 }
 
-/** PROTEIN / MONSTER を黒地でない場所に置くとき用（黒＋オレンジ） */
-function drawLogoDark(ctx, cx, y, size, accent) {
+/**
+ * 明るい背景に置くロゴ。支給ファイルがあればそれをそのまま（縦横比のまま）置く。
+ * 無いときだけ、文字で組んだ代用を描く。
+ */
+function drawLogoDark(ctx, cx, y, size, accent, logo = null) {
+  if (logo && logo.width && logo.height) {
+    const h = size * 2.04;
+    const w = (logo.width / logo.height) * h;
+    ctx.drawImage(logo, cx - w / 2, y, w, h);
+    return;
+  }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = `900 ${size}px ${FONT}`;
@@ -150,7 +159,7 @@ function renderTitle(ctx, r, img, accent, swipeBar) {
 
 /* --------------------------- ② 材料 --------------------------- */
 
-function renderIngredients(ctx, r, accent) {
+function renderIngredients(ctx, r, accent, logo) {
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, W, H);
 
@@ -220,7 +229,7 @@ function renderIngredients(ctx, r, accent) {
     y += rowH;
   }
 
-  drawLogoDark(ctx, cx, H - W * 0.235, W * 0.072, accent);
+  drawLogoDark(ctx, cx, H - W * 0.235, W * 0.072, accent, logo);
 }
 
 /* --------------------------- ③ 作り方 --------------------------- */
@@ -398,7 +407,7 @@ function renderOutro(ctx, outro, accent, thumbs = []) {
  * @param {HTMLCanvasElement} canvas
  * @param {'title'|'ingredients'|'steps'|'outro'} slide
  * @param {object} recipe
- * @param {object} opts { heroImg, thumbs, accent, outro, swipeBar }
+ * @param {object} opts { heroImg, thumbs, accent, outro, swipeBar, logo }
  */
 export async function renderSlide(canvas, slide, recipe, opts = {}) {
   await ensureFonts();
@@ -408,7 +417,7 @@ export async function renderSlide(canvas, slide, recipe, opts = {}) {
   const ctx = canvas.getContext('2d');
   ctx.save();
   if (slide === 'title') renderTitle(ctx, recipe, opts.heroImg, accent, opts.swipeBar || '');
-  else if (slide === 'ingredients') renderIngredients(ctx, recipe, accent);
+  else if (slide === 'ingredients') renderIngredients(ctx, recipe, accent, opts.logo || null);
   else if (slide === 'steps') renderSteps(ctx, recipe, accent);
   else renderOutro(ctx, opts.outro, accent, opts.thumbs || []);
   ctx.restore();

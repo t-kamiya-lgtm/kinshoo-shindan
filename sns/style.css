@@ -238,6 +238,30 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 }
 .card.danger { border-color: rgba(255, 107, 107, 0.3); }
 
+/* ブランドロゴの登録欄 */
+.logo-slot { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.logo-slot-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; }
+.logo-preview {
+  display: flex; align-items: center; justify-content: flex-start;
+  min-height: 72px; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px;
+  background-image: linear-gradient(45deg, #2a2c30 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2c30 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2c30 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2c30 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  background-color: #1a1c1f;
+}
+/* 明るい背景用のロゴは、明るい下地に重ねて見せないと確認にならない */
+.logo-preview.onLight {
+  background-image: linear-gradient(45deg, #dcdcdc 25%, transparent 25%),
+    linear-gradient(-45deg, #dcdcdc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #dcdcdc 75%),
+    linear-gradient(-45deg, transparent 75%, #dcdcdc 75%);
+  background-color: #fbe9dc;
+}
+.logo-preview canvas { height: 56px; width: auto; display: block; }
+
 /* 描画に失敗したときに、原因をその場に出すための枠 */
 .notice.danger {
   background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.4);

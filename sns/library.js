@@ -144,9 +144,50 @@ export async function listStored() {
   return new Promise((resolve, reject) => {
     const t = db.transaction(STORE, 'readonly');
     const req = t.objectStore(STORE).getAll();
-    req.onsuccess = () => resolve(req.result || []);
+    // ロゴは素材写真ではないので、一覧・自動選択の対象から外す
+    req.onsuccess = () => resolve((req.result || []).filter((r) => !RESERVED.has(r.key)));
     req.onerror = () => reject(req.error);
   });
+}
+
+/* --------------------------- ブランドロゴ --------------------------- */
+//
+// ロゴは描き起こさず、支給されたファイルをそのまま使う。
+// 写真の上に置く白抜き用と、明るい背景に置く濃い色用の2枚を持てる。
+// 1枚しか登録がなければ、その1枚を両方に使う。
+
+export const LOGO_SLOTS = {
+  onPhoto: '写真・暗い背景に置くロゴ（白抜き）',
+  onLight: '明るい背景に置くロゴ（濃い色）'
+};
+
+const LOGO_KEYS = { onPhoto: '__logo_on_photo__', onLight: '__logo_on_light__' };
+const RESERVED = new Set(Object.values(LOGO_KEYS));
+
+export async function saveLogo(slot, file) {
+  const key = LOGO_KEYS[slot];
+  if (!key) throw new Error(`不明なロゴ枠: ${slot}`);
+  const blob = file.slice(0, file.size, file.type || 'image/png');
+  await tx('readwrite', (store) =>
+    store.put({ key, name: file.name, type: file.type || 'image/png', size: file.size, importedAt: Date.now(), blob })
+  );
+}
+
+export async function getLogo(slot) {
+  const key = LOGO_KEYS[slot];
+  if (!key) return null;
+  return getImage(key);
+}
+
+export async function removeLogo(slot) {
+  const key = LOGO_KEYS[slot];
+  if (key) await removeImage(key);
+}
+
+/** 2枠ぶんまとめて読む。片方しかなければ、あるほうで埋める。 */
+export async function loadLogos() {
+  const [onPhoto, onLight] = await Promise.all([getLogo('onPhoto'), getLogo('onLight')]);
+  return { onPhoto: onPhoto || onLight, onLight: onLight || onPhoto, hasOnPhoto: !!onPhoto, hasOnLight: !!onLight };
 }
 
 export async function getImage(key) {
@@ -163,8 +204,10 @@ export async function removeImage(key) {
   return tx('readwrite', (store) => store.delete(key));
 }
 
+/** 素材写真だけを消す。登録したロゴは残す（取り込み直しのたびに上げ直すのは手間なので）。 */
 export async function clearAll() {
-  return tx('readwrite', (store) => store.clear());
+  const all = await listStored();
+  for (const item of all) await removeImage(item.key);
 }
 
 /* --------------------------- タグ --------------------------- */

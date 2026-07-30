@@ -136,9 +136,26 @@ export function setTracking(ctx, px) {
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${px}px`;
 }
 
-/** PROTEIN / MONSTER の2段ロゴ。戻り値は占有した高さ。 */
-function drawLogo(ctx, x, y, W, accent, scale = 1) {
-  const size = W * 0.036 * scale;
+/** ロゴが占める高さ。レイアウトはこの値を前提に組む。 */
+export function logoHeight(W) {
+  return W * 0.036 * 2.04;
+}
+
+/**
+ * ロゴを置く。戻り値は占有した高さ。
+ *
+ * 支給ロゴ（logo）が渡されていれば、それを縦横比を保ったまま拡縮して置くだけで、
+ * 色も字形も一切変えない。渡されていないときだけ、文字で組んだ代用を描く。
+ * ブランドのロゴは描き起こしてよいものではないので、支給ファイルを優先する。
+ */
+function drawLogo(ctx, x, y, W, accent, logo = null) {
+  const h = logoHeight(W);
+  if (logo && logo.width && logo.height) {
+    const w = (logo.width / logo.height) * h;
+    ctx.drawImage(logo, x, y, w, h);
+    return h;
+  }
+  const size = W * 0.036;
   const lh = size * 1.02;
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
@@ -223,7 +240,7 @@ function drawChips(ctx, chips, x, y, W, maxW, accent) {
 /* ------------------------- テンプレート ------------------------- */
 
 function renderStat(ctx, ov, geo, accent) {
-  const { W, H, pad } = geo;
+  const { W, H, pad, logo } = geo;
   const top = ov.position === 'top';
 
   // 先に高さを積算する。上寄せのときは、その高さぶん下げた位置を「底」として扱う。
@@ -238,15 +255,15 @@ function renderStat(ctx, ov, geo, accent) {
   const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.02 : 0;
   const blockH = (chipsH ? chipsH + W * 0.035 : 0) + suffixH + bandH + W * 0.022 + leadH + eyebrowH;
 
-  const logoH = W * 0.036 * 2.04;
+  const logoH = logoHeight(W);
   if (top) {
     scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
     scrimBottom(ctx, W, H, 0.86, 0.5);
-    drawLogo(ctx, pad, H - pad - logoH, W, accent);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
   } else {
     scrimBottom(ctx, W, H, 0.34);
     scrimTop(ctx, W, H, 0.22, 0.55);
-    drawLogo(ctx, pad, pad, W, accent);
+    drawLogo(ctx, pad, pad, W, accent, logo);
   }
 
   let bottom = top ? pad + blockH : H - pad;
@@ -301,7 +318,7 @@ function renderStat(ctx, ov, geo, accent) {
 }
 
 function renderHook(ctx, ov, geo, accent) {
-  const { W, H, pad } = geo;
+  const { W, H, pad, logo } = geo;
   const top = ov.position === 'top';
 
   const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
@@ -317,15 +334,15 @@ function renderHook(ctx, ov, geo, accent) {
   const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.028 : 0;
   const blockH = (chipsH ? chipsH + W * 0.04 : 0) + subH + headH + eyebrowH;
 
-  const logoH = W * 0.036 * 2.04;
+  const logoH = logoHeight(W);
   if (top) {
     scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
     scrimBottom(ctx, W, H, 0.86, 0.5);
-    drawLogo(ctx, pad, H - pad - logoH, W, accent);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
   } else {
     scrimBottom(ctx, W, H, 0.3);
     scrimTop(ctx, W, H, 0.22, 0.55);
-    drawLogo(ctx, pad, pad, W, accent);
+    drawLogo(ctx, pad, pad, W, accent, logo);
   }
 
   let bottom = top ? pad + blockH : H - pad;
@@ -371,7 +388,7 @@ function renderHook(ctx, ov, geo, accent) {
 }
 
 function renderBand(ctx, ov, geo, accent) {
-  const { W, H, pad } = geo;
+  const { W, H, pad, logo } = geo;
   // 上下帯は position でロゴ帯とコピー帯を入れ替える
   const flip = ov.position === 'top';
 
@@ -380,7 +397,7 @@ function renderBand(ctx, ov, geo, accent) {
   const logoBarY = flip ? H - topH : 0;
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
   ctx.fillRect(0, logoBarY, W, topH);
-  drawLogo(ctx, pad, logoBarY + (topH - W * 0.036 * 2.04) / 2, W, accent);
+  drawLogo(ctx, pad, logoBarY + (topH - logoHeight(W)) / 2, W, accent, logo);
   if (ov.eyebrow) {
     const s = W * 0.03;
     ctx.font = `700 ${s}px ${FONT}`;
@@ -471,7 +488,7 @@ function measureChips(ctx, chips, W, maxW) {
  */
 export async function render(canvas, img, opts = {}) {
   await ensureFonts();
-  const { aspect = '4:5', overlay = null, accent = BRAND.orange, focus = 0.5 } = opts;
+  const { aspect = '4:5', overlay = null, accent = BRAND.orange, focus = 0.5, logo = null } = opts;
   const { w: W, h: H } = ASPECTS[aspect] || ASPECTS['4:5'];
   canvas.width = W;
   canvas.height = H;
@@ -483,7 +500,7 @@ export async function render(canvas, img, opts = {}) {
 
   if (!overlay) return canvas;
 
-  const geo = { W, H, pad: Math.round(W * 0.062) };
+  const geo = { W, H, pad: Math.round(W * 0.062), logo };
   ctx.save();
   const template = overlay.template || 'hook';
   if (template === 'stat') renderStat(ctx, overlay, geo, accent);
