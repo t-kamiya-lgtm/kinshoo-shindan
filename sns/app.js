@@ -7,6 +7,7 @@ import * as lib from './library.js';
 import * as composer from './composer.js';
 import * as recipeArt from './recipe.js';
 import { RECIPES, OUTRO, SWIPE_BAR, getRecipe, resolveRecipe } from './data/recipes.js';
+import { HASHTAGS } from './data/copy.js';
 
 /* ============================ 状態 ============================ */
 
@@ -45,7 +46,7 @@ let postLog = load(LS.log, { entries: [] });
 if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
 
 // レシピ画面の状態。選んだレシピ・写真・編集したキャプションを覚えておく。
-let recipeState = load(LS.recipe, { id: RECIPES[0] ? RECIPES[0].id : null, heroKey: '', captions: {} });
+let recipeState = load(LS.recipe, { key: RECIPES[0] ? RECIPES[0].key : null, heroKey: '', captions: {} });
 if (!recipeState.captions) recipeState.captions = {};
 
 let dateKey = jstDateKey();
@@ -560,8 +561,8 @@ async function renderRecipeView() {
     return;
   }
 
-  const base = getRecipe(recipeState.id) || RECIPES[0];
-  recipeState.id = base.id;
+  const base = getRecipe(recipeState.key) || RECIPES[0];
+  recipeState.key = base.key;
   // ゆで時間を商品表示の「3〜5分」に差し替え、調理時間も換算した状態で扱う。
   // 画像とキャプションが同じ数字を使うよう、ここで一度だけ解決する。
   const product = PRODUCTS[base.sku];
@@ -569,9 +570,9 @@ async function renderRecipeView() {
 
   // レシピの選択肢
   sel.replaceChildren(...RECIPES.map((r) => el('option', {
-    value: String(r.id),
-    selected: r.id === recipe.id ? 'selected' : null
-  }, `${r.id}. ${r.label}${r.title.replace(/\n/g, '')}（${r.sku === 'monster' ? 'モンスター' : 'ソバ'}）`)));
+    value: r.key,
+    selected: r.key === recipe.key ? 'selected' : null
+  }, `${r.sku === 'monster' ? 'モンスター' : 'ソバ'} ${String(r.no).padStart(2, '0')}｜${r.label}${r.title.replace(/\n/g, '')}`)));
 
   // 写真の選択肢
   const options = recipePhotoOptions(recipe);
@@ -612,9 +613,16 @@ async function renderRecipeView() {
   }
 
   // キャプション
-  const generated = recipeArt.buildRecipeCaption(recipe, product);
+  // ハッシュタグはレシピ寄りに。キーで決まるので毎回同じ並びになる。
+  const tags = [];
+  for (const t of [...HASHTAGS.core, ...HASHTAGS.bySku[recipe.sku],
+    ...HASHTAGS.byAxis.time, ...HASHTAGS.byAxis.diet]) {
+    if (!tags.includes(t)) tags.push(t);
+    if (tags.length >= 20) break;
+  }
+  const generated = recipeArt.buildRecipeCaption(recipe, product, tags);
   const ta = $('#recipe-caption');
-  ta.value = recipeState.captions[recipe.id] ?? generated;
+  ta.value = recipeState.captions[recipe.key] ?? generated;
 
   const counter = $('#recipe-counter');
   const compBox = $('#recipe-compliance');
@@ -643,14 +651,14 @@ async function renderRecipeView() {
   }
 
   ta.oninput = () => {
-    recipeState.captions[recipe.id] = ta.value;
+    recipeState.captions[recipe.key] = ta.value;
     save(LS.recipe, recipeState);
     renderRecipeCompliance();
   };
   renderRecipeCompliance();
 
   sel.onchange = (e) => {
-    recipeState.id = Number(e.target.value);
+    recipeState.key = e.target.value;
     recipeState.heroKey = '';
     save(LS.recipe, recipeState);
     renderRecipeView();
@@ -662,7 +670,7 @@ async function renderRecipeView() {
   };
   $('#recipe-copy').onclick = () => copyText(ta.value);
   $('#recipe-reset').onclick = () => {
-    delete recipeState.captions[recipe.id];
+    delete recipeState.captions[recipe.key];
     save(LS.recipe, recipeState);
     renderRecipeView();
   };
@@ -670,7 +678,7 @@ async function renderRecipeView() {
     const order = ['title', 'ingredients', 'steps', 'outro'];
     for (let i = 0; i < order.length; i++) {
       const blob = await composer.toBlob(canvases[order[i]], 'image/jpeg', 0.94);
-      composer.download(blob, `recipe${recipe.id}_${i + 1}_${order[i]}.jpg`);
+      composer.download(blob, `${recipe.key}_${i + 1}_${order[i]}.jpg`);
       // 連続ダウンロードはブラウザに嫌われることがあるので、少し間を置く
       await new Promise((res) => setTimeout(res, 350));
     }

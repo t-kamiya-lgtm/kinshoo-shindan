@@ -96,20 +96,23 @@ function renderTitle(ctx, r, img, accent, swipeBar) {
   const cx = W / 2;
   const pad = W * 0.07;
 
-  // 黒の角丸ラベル（一部オレンジ）
+  // 黒の角丸ラベル（一部オレンジ）。ラベルの無い原稿では省く。
   const labelSize = W * 0.046;
-  ctx.font = `700 ${labelSize}px ${FONT}`;
-  const labelW = ctx.measureText(r.label).width;
-  const padX = labelSize * 0.9;
-  const padY = labelSize * 0.5;
-  const boxW = labelW + padX * 2;
-  const boxH = labelSize + padY * 2;
   const boxY = H * 0.085;
-  ctx.fillStyle = 'rgba(20,20,20,0.92)';
-  roundRect(ctx, cx - boxW / 2, boxY, boxW, boxH, boxH * 0.42);
-  ctx.fill();
-  ctx.textBaseline = 'top';
-  drawSplitLine(ctx, r.label, r.labelAccent, cx, boxY + padY, labelSize, BRAND.white, accent);
+  let boxH = 0;
+  if (r.label) {
+    ctx.font = `700 ${labelSize}px ${FONT}`;
+    const labelW = ctx.measureText(r.label).width;
+    const padX = labelSize * 0.9;
+    const padY = labelSize * 0.5;
+    const boxW = labelW + padX * 2;
+    boxH = labelSize + padY * 2;
+    ctx.fillStyle = 'rgba(20,20,20,0.92)';
+    roundRect(ctx, cx - boxW / 2, boxY, boxW, boxH, boxH * 0.42);
+    ctx.fill();
+    ctx.textBaseline = 'top';
+    drawSplitLine(ctx, r.label, r.labelAccent, cx, boxY + padY, labelSize, BRAND.white, accent);
+  }
 
   // 大見出し（黒フチ＋白）
   const titleSize = W * 0.085;
@@ -187,13 +190,24 @@ function renderIngredients(ctx, r, accent) {
   const tableL = pad + W * 0.03;
   const tableR = W - pad;
   for (const item of r.ingredients) {
-    ctx.font = `700 ${rowSize}px ${FONT}`;
+    // 品目名が長い行だけ、分量とぶつからないところまで文字を縮める
+    let size = rowSize;
+    for (let i = 0; i < 6; i++) {
+      ctx.font = `700 ${size}px ${FONT}`;
+      const kw = ctx.measureText(item.k).width;
+      ctx.font = `900 ${size}px ${FONT}`;
+      const vw = ctx.measureText(item.v).width;
+      if (kw + vw + size * 0.8 <= tableR - tableL) break;
+      size *= 0.92;
+    }
+
+    ctx.font = `700 ${size}px ${FONT}`;
     ctx.fillStyle = INK;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(item.k, tableL, y + rowH * 0.42);
 
-    ctx.font = `900 ${rowSize}px ${FONT}`;
+    ctx.font = `900 ${size}px ${FONT}`;
     ctx.textAlign = 'right';
     ctx.fillText(item.v, tableR, y + rowH * 0.42);
 
@@ -402,28 +416,35 @@ export async function renderSlide(canvas, slide, recipe, opts = {}) {
 }
 
 /** レシピ投稿のキャプション。原稿の文言をそのまま使う。 */
-export function buildRecipeCaption(recipe, product) {
+export function buildRecipeCaption(recipe, product, hashtags = []) {
   const n = recipe.nutrition;
   const title = recipe.title.replace(/\n/g, '');
-  return [
+  // 原稿によって「炭水化物」と「糖質」のどちらかしか無いので、あるものを書く
+  const carbPart = n.carb !== undefined ? `／炭水化物約${n.carb}g`
+    : n.sugar !== undefined ? `／糖質約${n.sugar}g` : '';
+  const lines = [
     `${recipe.label}${title}`,
-    '',
-    recipe.summaryLead,
+    ''
+  ];
+  if (recipe.summaryLead) lines.push(recipe.summaryLead);
+  lines.push(
     recipe.summary,
     '',
-    `【材料（1人前）】`,
+    '【材料（1人前）】',
     ...recipe.ingredients.map((i) => `・${i.k}：${i.v}`),
     '',
     `【作り方】調理時間 約${recipe.minutes}分`,
     ...recipe.steps.map((s, i) => `${i + 1}. ${s}`),
     '',
-    `【1皿あたりの推定値】`,
-    `エネルギー約${n.kcal}kcal／たんぱく質約${n.protein}g／脂質約${n.fat}g／炭水化物約${n.carb}g`,
+    '【1皿あたりの推定値】',
+    `エネルギー約${n.kcal}kcal／たんぱく質約${n.protein}g／脂質約${n.fat}g${carbPart}`,
     `※上記は材料から算出した推定値です。麺そのものの分析値は1食（${product.servingG}g）あたり` +
       `たんぱく質${product.nutrition.protein}g、${product.nutrition.kcal}kcalです。`,
     '',
     '※本品製造工場では、そば・大豆を含む製品を生産しています。豆類にアレルギーのある方はご注意ください。'
-  ].join('\n');
+  );
+  if (hashtags.length) lines.push('', hashtags.join(' '));
+  return lines.join('\n');
 }
 
 export { W as SLIDE_W, H as SLIDE_H };

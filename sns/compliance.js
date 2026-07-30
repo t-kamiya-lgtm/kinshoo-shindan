@@ -42,6 +42,14 @@ const YAKKI_RULES = [
     fix: '削除するか、原材料・成分の事実の記載にとどめてください。'
   },
   {
+    id: 'yakki-digest',
+    level: LEVEL.WARN,
+    law: '薬機法',
+    pattern: /胃腸に(?:優|やさ)しく|消化を助け|消化酵素が豊富|吸収を高め/,
+    reason: '消化・吸収など体内の働きへの作用を示す表現は、食品では避けるのが安全です。',
+    fix: '素材の一般的な説明にとどめるか、削除してください（例：「ネバネバ食材の長芋をプラス」）。'
+  },
+  {
     id: 'yakki-health',
     level: LEVEL.WARN,
     law: '薬機法',
