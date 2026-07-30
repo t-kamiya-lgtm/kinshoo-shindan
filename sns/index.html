@@ -31,6 +31,7 @@
 <nav class="tabs" id="tabs">
   <button class="tab active" data-view="proposals">今日の提案</button>
   <button class="tab" data-view="library">画像ライブラリ <span class="badge" id="lib-badge">0</span></button>
+  <button class="tab" data-view="recipe">レシピ投稿</button>
   <button class="tab" data-view="spec">スペック</button>
   <button class="tab" data-view="log">投稿ログ</button>
   <button class="tab" data-view="settings">設定</button>
@@ -72,6 +73,42 @@
     </div>
 
     <div class="lib-grid" id="lib-grid"></div>
+  </section>
+
+  <!-- ============ レシピ投稿 ============ -->
+  <section class="view" id="view-recipe">
+    <div class="notice" id="recipe-notice" hidden></div>
+    <div class="card">
+      <div class="row">
+        <label class="field-inline">
+          <span>レシピ</span>
+          <select id="recipe-select"></select>
+        </label>
+        <label class="field-inline">
+          <span>できあがり写真</span>
+          <select id="recipe-hero"></select>
+        </label>
+      </div>
+      <p class="hint">
+        4枚組のカルーセルとして書き出します。全枚 1080×1350（4:5）で揃えているので、
+        Instagram でトリミングされません。①の背景だけ写真を使い、②③④は文字で組みます。
+      </p>
+    </div>
+
+    <div class="recipe-slides" id="recipe-slides"></div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" id="recipe-download">4枚すべてダウンロード</button>
+        <button class="btn ghost" id="recipe-copy">キャプションをコピー</button>
+        <button class="btn ghost" id="recipe-reset">キャプションを戻す</button>
+      </div>
+      <label style="font-size:12px;color:var(--muted)">キャプション</label>
+      <textarea id="recipe-caption" rows="18"></textarea>
+      <div class="counter" id="recipe-counter"></div>
+    </div>
+
+    <div class="compliance" id="recipe-compliance"></div>
   </section>
 
   <!-- ============ スペック ============ -->

@@ -15,13 +15,18 @@ export const ASPECTS = {
   '16:9': { w: 1200, h: 675, label: '横 16:9（X推奨）' }
 };
 
+export const POSITIONS = {
+  bottom: '文字を下に置く',
+  top: '文字を上に置く'
+};
+
 export const TEMPLATES = {
   stat: '数値主役（大きな数字＋オレンジ帯）',
   hook: 'コピー主役（見出し2行）',
   band: '上下帯（ロゴ帯＋コピー帯）'
 };
 
-const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif';
+export const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif';
 
 // ブランドの基本色。accent は設定で変更できる。
 export const BRAND = {
@@ -71,14 +76,14 @@ export async function loadBitmap(blob) {
 
 /* ------------------------- 描画の下請け ------------------------- */
 
-function drawCover(ctx, img, W, H, focus = 0.5) {
+export function drawCover(ctx, img, W, H, focus = 0.5) {
   const scale = Math.max(W / img.width, H / img.height);
   const dw = img.width * scale;
   const dh = img.height * scale;
   ctx.drawImage(img, (W - dw) / 2, (H - dh) * focus, dw, dh);
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+export function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
@@ -90,7 +95,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 /** 日本語は単語境界がないので1文字ずつ測って折り返す */
-function wrap(ctx, text, maxWidth) {
+export function wrap(ctx, text, maxWidth) {
   const out = [];
   for (const para of String(text ?? '').split('\n')) {
     let line = '';
@@ -127,7 +132,7 @@ function scrimTop(ctx, W, H, toRatio, strength = 0.7) {
   ctx.fillRect(0, 0, W, bottom);
 }
 
-function setTracking(ctx, px) {
+export function setTracking(ctx, px) {
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${px}px`;
 }
 
@@ -219,37 +224,52 @@ function drawChips(ctx, chips, x, y, W, maxW, accent) {
 
 function renderStat(ctx, ov, geo, accent) {
   const { W, H, pad } = geo;
-  scrimBottom(ctx, W, H, 0.34);
-  scrimTop(ctx, W, H, 0.22, 0.55);
+  const top = ov.position === 'top';
 
-  drawLogo(ctx, pad, pad, W, accent);
-
-  // 下から積み上げる
-  let bottom = H - pad;
-
+  // 先に高さを積算する。上寄せのときは、その高さぶん下げた位置を「底」として扱う。
   const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
+  const suffixH = ov.suffix ? W * 0.048 * 1.5 : 0;
+  const numSize = W * 0.235;
+  const bandH = numSize * 1.16;
+  const leadSize = W * 0.058;
+  ctx.font = `700 ${leadSize}px ${FONT}`;
+  const leadLines = ov.lead ? wrap(ctx, ov.lead, W - pad * 2) : [];
+  const leadH = leadLines.length * leadSize * 1.32;
+  const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.02 : 0;
+  const blockH = (chipsH ? chipsH + W * 0.035 : 0) + suffixH + bandH + W * 0.022 + leadH + eyebrowH;
+
+  const logoH = W * 0.036 * 2.04;
+  if (top) {
+    scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
+    scrimBottom(ctx, W, H, 0.86, 0.5);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent);
+  } else {
+    scrimBottom(ctx, W, H, 0.34);
+    scrimTop(ctx, W, H, 0.22, 0.55);
+    drawLogo(ctx, pad, pad, W, accent);
+  }
+
+  let bottom = top ? pad + blockH : H - pad;
+
   if (chipsH) {
     drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
     bottom -= chipsH + W * 0.035;
   }
 
-  // 「の衝撃を。」のような後置き
   if (ov.suffix) {
-    const s = W * 0.048;
-    ctx.font = `700 ${s}px ${FONT}`;
+    const s2 = W * 0.048;
+    ctx.font = `700 ${s2}px ${FONT}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = BRAND.white;
     ctx.fillText(ov.suffix, pad, bottom);
-    bottom -= s * 1.5;
+    bottom -= s2 * 1.5;
   }
 
   // オレンジ帯＋極太数字
-  const numSize = W * 0.235;
   ctx.font = `900 ${numSize}px ${FONT}`;
   setTracking(ctx, -numSize * 0.02);
   const numW = ctx.measureText(ov.big || '').width;
-  const bandH = numSize * 1.16;
   const bandPad = numSize * 0.11;
   const bandY = bottom - bandH;
   ctx.fillStyle = accent;
@@ -262,102 +282,112 @@ function renderStat(ctx, ov, geo, accent) {
   setTracking(ctx, 0);
   bottom = bandY - W * 0.022;
 
-  // 数字の上の小見出し
-  if (ov.lead) {
-    const s = W * 0.058;
-    ctx.font = `700 ${s}px ${FONT}`;
+  if (leadLines.length) {
+    ctx.font = `700 ${leadSize}px ${FONT}`;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
-    const lines = wrap(ctx, ov.lead, W - pad * 2);
-    let y = bottom - (lines.length - 1) * s * 1.32;
+    let y = bottom - (leadLines.length - 1) * leadSize * 1.32;
     ctx.fillStyle = BRAND.white;
-    for (const line of lines) {
+    for (const line of leadLines) {
       ctx.fillText(line, pad, y);
-      y += s * 1.32;
+      y += leadSize * 1.32;
     }
-    bottom -= lines.length * s * 1.32;
+    bottom -= leadH;
   }
 
   if (ov.eyebrow) {
-    const s = W * 0.03;
-    const h = s + s * 0.84;
-    drawEyebrow(ctx, ov.eyebrow, pad, bottom - h - W * 0.02, W, accent);
+    drawEyebrow(ctx, ov.eyebrow, pad, bottom - W * 0.03 * 1.84 - W * 0.02, W, accent);
   }
 }
 
 function renderHook(ctx, ov, geo, accent) {
   const { W, H, pad } = geo;
-  scrimBottom(ctx, W, H, 0.3);
-  scrimTop(ctx, W, H, 0.22, 0.55);
-
-  drawLogo(ctx, pad, pad, W, accent);
-
-  let bottom = H - pad;
+  const top = ov.position === 'top';
 
   const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
+  const subSize = W * 0.038;
+  ctx.font = `500 ${subSize}px ${FONT}`;
+  const subLines = ov.sub ? wrap(ctx, ov.sub, W - pad * 2) : [];
+  const subH = subLines.length ? subLines.length * subSize * 1.5 + W * 0.012 : 0;
+  const headSize = W * 0.092;
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  const headLines = wrap(ctx, ov.big, W - pad * 2 - W * 0.04);
+  const headLh = headSize * 1.34;
+  const headH = headLines.length * headLh;
+  const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.028 : 0;
+  const blockH = (chipsH ? chipsH + W * 0.04 : 0) + subH + headH + eyebrowH;
+
+  const logoH = W * 0.036 * 2.04;
+  if (top) {
+    scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
+    scrimBottom(ctx, W, H, 0.86, 0.5);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent);
+  } else {
+    scrimBottom(ctx, W, H, 0.3);
+    scrimTop(ctx, W, H, 0.22, 0.55);
+    drawLogo(ctx, pad, pad, W, accent);
+  }
+
+  let bottom = top ? pad + blockH : H - pad;
+
   if (chipsH) {
     drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
     bottom -= chipsH + W * 0.04;
   }
 
-  if (ov.sub) {
-    const s = W * 0.038;
-    ctx.font = `500 ${s}px ${FONT}`;
+  if (subLines.length) {
+    ctx.font = `500 ${subSize}px ${FONT}`;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
-    const lines = wrap(ctx, ov.sub, W - pad * 2);
     let y = bottom;
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    for (let i = lines.length - 1; i >= 0; i--) {
-      ctx.fillText(lines[i], pad, y);
-      y -= s * 1.5;
+    for (let i = subLines.length - 1; i >= 0; i--) {
+      ctx.fillText(subLines[i], pad, y);
+      y -= subSize * 1.5;
     }
-    bottom -= lines.length * s * 1.5 + W * 0.012;
+    bottom -= subH;
   }
 
-  // 見出し
-  const s = W * 0.092;
-  ctx.font = `900 ${s}px ${FONT}`;
-  setTracking(ctx, -s * 0.015);
-  const lines = wrap(ctx, ov.big, W - pad * 2 - W * 0.04);
-  const lh = s * 1.34;
-  let y = bottom - (lines.length - 1) * lh;
-  const blockTop = y - s * 0.86;
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  setTracking(ctx, -headSize * 0.015);
+  let y = bottom - (headLines.length - 1) * headLh;
+  const blockTop = y - headSize * 0.86;
 
-  // 見出しの左にアクセントの縦線
   ctx.fillStyle = accent;
-  ctx.fillRect(pad, blockTop + s * 0.18, W * 0.011, lines.length * lh - s * 0.34);
+  ctx.fillRect(pad, blockTop + headSize * 0.18, W * 0.011, headH - headSize * 0.34);
 
   ctx.fillStyle = BRAND.white;
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
-  for (const line of lines) {
+  for (const line of headLines) {
     ctx.fillText(line, pad + W * 0.042, y);
-    y += lh;
+    y += headLh;
   }
   setTracking(ctx, 0);
 
   if (ov.eyebrow) {
-    const eh = W * 0.03 + W * 0.03 * 0.84;
-    drawEyebrow(ctx, ov.eyebrow, pad, blockTop - eh - W * 0.028, W, accent);
+    drawEyebrow(ctx, ov.eyebrow, pad, blockTop - W * 0.03 * 1.84 - W * 0.028, W, accent);
   }
 }
 
 function renderBand(ctx, ov, geo, accent) {
   const { W, H, pad } = geo;
+  // 上下帯は position でロゴ帯とコピー帯を入れ替える
+  const flip = ov.position === 'top';
 
-  // 上帯：ロゴと前置き
+  // ロゴ帯：ロゴと前置き
   const topH = W * 0.14;
+  const logoBarY = flip ? H - topH : 0;
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
-  ctx.fillRect(0, 0, W, topH);
-  const logoH = drawLogo(ctx, pad, (topH - W * 0.036 * 2.04) / 2, W, accent);
+  ctx.fillRect(0, logoBarY, W, topH);
+  drawLogo(ctx, pad, logoBarY + (topH - W * 0.036 * 2.04) / 2, W, accent);
   if (ov.eyebrow) {
     const s = W * 0.03;
     ctx.font = `700 ${s}px ${FONT}`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText(ov.eyebrow, W - pad, topH / 2);
+    ctx.fillText(ov.eyebrow, W - pad, logoBarY + topH / 2);
     ctx.textAlign = 'left';
   }
 
@@ -377,7 +407,7 @@ function renderBand(ctx, ov, geo, accent) {
     headLines.length * headLh +
     (subLines.length ? subLines.length * subLh + W * 0.012 : 0) +
     (chipsH ? chipsH + W * 0.03 : 0);
-  const bandY = H - bandH;
+  const bandY = flip ? 0 : H - bandH;
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
   ctx.fillRect(0, bandY, W, bandH);
 

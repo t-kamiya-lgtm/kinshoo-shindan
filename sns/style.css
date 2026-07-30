@@ -259,3 +259,24 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   border-radius: 8px; padding: 7px 9px; font-family: var(--font); font-size: 12px;
   max-width: 100%;
 }
+
+/* 画像に載せる文字の編集欄 / レシピ投稿 */
+.field-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.field-inline select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 7px 10px; font-family: var(--font); font-size: 13px;
+  max-width: 420px;
+}
+.recipe-slides {
+  display: grid; gap: 14px; margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.recipe-slide {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden;
+}
+.recipe-slide .slide-label {
+  padding: 8px 12px; font-size: 12px; font-weight: 700;
+  border-bottom: 1px solid var(--line); background: var(--panel-2);
+}
+.recipe-slide canvas { width: 100%; height: auto; display: block; cursor: zoom-in; }
