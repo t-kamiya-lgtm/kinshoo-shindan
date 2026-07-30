@@ -360,12 +360,13 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
         el('select', {
           class: 'grow',
           onchange: (e) => patchOverlay({ template: e.target.value })
-        }, ...Object.entries(composer.TEMPLATES).map(([k, label]) =>
+        }, ...Object.entries(composer.TEMPLATES || { hook: 'コピー主役' }).map(([k, label]) =>
           el('option', { value: k, selected: k === (overlay.template || 'hook') ? 'selected' : null }, label))),
         el('select', {
           onchange: (e) => patchOverlay({ position: e.target.value })
-        }, ...Object.entries(composer.POSITIONS).map(([k, label]) =>
-          el('option', { value: k, selected: k === (overlay.position || 'bottom') ? 'selected' : null }, label))),
+        }, ...Object.entries(composer.POSITIONS || { bottom: '文字を下に置く', top: '文字を上に置く' })
+          .map(([k, label]) =>
+            el('option', { value: k, selected: k === (overlay.position || 'bottom') ? 'selected' : null }, label))),
         el('button', {
           class: 'btn ghost small',
           onclick: () => {
