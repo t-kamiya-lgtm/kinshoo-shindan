@@ -18,7 +18,10 @@ const defaultSettings = {
   accent: '#f0821e', // ブランドのオレンジ
   igAspect: '4:5',
   xAspect: '16:9',
-  prMode: false
+  prMode: false,
+  // Instagram と X を「同じ投稿の媒体別バージョン」として作るか。
+  // オフにすると、それぞれ独立した内容になる。
+  syncPlatforms: true
 };
 
 const load = (k, fb) => {
@@ -163,26 +166,34 @@ async function renderProposals() {
   list.replaceChildren();
   $('#no-images-notice').hidden = stored.length > 0;
 
-  const plan = generateDailyPlan(dateKey, variants);
-  // 同日の2本で同じ写真を使わないうえ、直近に投稿した写真も避ける。
-  // 候補が尽きた場合は pickImage が全体から選び直すので、行き止まりにはならない。
+  const sync = settings.syncPlatforms;
+  const plan = generateDailyPlan(dateKey, variants, { sync });
+  // 直近に投稿した写真は避ける。候補が尽きた場合は pickImage が全体から
+  // 選び直すので、行き止まりにはならない。
   const usedKeys = recentImageKeys();
 
   // まず両方の画像を確定させる。カード側の「別の写真」が相手と衝突しないよう、
   // 決まった組み合わせを両方のカードに渡す必要がある。
-  const assigned = plan.posts.map((raw) => {
+  const assigned = [];
+  for (const raw of plan.posts) {
     const post = withEdits(raw);
     let imageItem = null;
-    if (post.imageKey) imageItem = stored.find((s) => s.key === post.imageKey) || null;
+    if (post.imageKey) {
+      imageItem = stored.find((s) => s.key === post.imageKey) || null;
+    } else if (sync && assigned.length && assigned[0].imageItem) {
+      // 媒体をそろえる設定では「同じ投稿」なので、写真も1枚目に合わせる。
+      imageItem = assigned[0].imageItem;
+    }
     if (!imageItem && stored.length) {
       imageItem = lib.pickImage(stored, post.image, post.id, usedKeys);
     }
-    if (imageItem) usedKeys.push(imageItem.key);
-    return { post, imageItem };
-  });
+    if (imageItem && !usedKeys.includes(imageItem.key)) usedKeys.push(imageItem.key);
+    assigned.push({ post, imageItem });
+  }
 
   for (const { post, imageItem } of assigned) {
-    const siblingKeys = assigned
+    // そろえる設定では写真の一致は正しい状態なので、重複として扱わない。
+    const siblingKeys = sync ? [] : assigned
       .filter((a) => a.post.id !== post.id && a.imageItem)
       .map((a) => a.imageItem.key);
     list.append(buildPostCard(post, imageItem, siblingKeys));
@@ -222,7 +233,23 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
   /* --- プレビュー --- */
   const canvasBox = el('div', { class: 'canvas-box' });
   const canvas = el('canvas');
-  if (imageItem) canvasBox.append(canvas);
+  if (imageItem) {
+    canvas.classList.add('zoomable');
+    canvas.title = 'クリックで別ウインドウに拡大表示';
+    canvas.addEventListener('click', async () => {
+      // 書き出すのと同じ画像を、別ウインドウで等倍表示する。
+      const blob = await composer.toBlob(canvas, 'image/png');
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (!w) {
+        toast('ポップアップがブロックされました。許可してください');
+        URL.revokeObjectURL(url);
+        return;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+    canvasBox.append(canvas);
+  }
   else canvasBox.append(el('div', { class: 'canvas-empty' }, '画像が未取込です。ライブラリに画像を追加してください。'));
 
   // 既定は設定タブの値。個別に変えたぶんだけ post.image.aspect に残る。
@@ -660,6 +687,7 @@ function renderSettings() {
   $('#ig-aspect').value = settings.igAspect;
   $('#x-aspect').value = settings.xAspect;
   $('#opt-pr').checked = settings.prMode;
+  $('#opt-sync').checked = settings.syncPlatforms;
   $('#cron-hint').innerHTML =
     '毎朝 8:00（日本時間）に GitHub Actions が動き、その日の提案の要点をメールで送ります。' +
     '提案そのものは日付をシードに生成されるため、メールとこの画面の内容は必ず一致します。' +
@@ -669,6 +697,7 @@ function renderSettings() {
   $('#ig-aspect').onchange = (e) => { settings.igAspect = e.target.value; save(LS.settings, settings); refresh(); };
   $('#x-aspect').onchange = (e) => { settings.xAspect = e.target.value; save(LS.settings, settings); refresh(); };
   $('#opt-pr').onchange = (e) => { settings.prMode = e.target.checked; save(LS.settings, settings); refresh(); };
+  $('#opt-sync').onchange = (e) => { settings.syncPlatforms = e.target.checked; save(LS.settings, settings); refresh(); };
 
   $('#btn-export').onclick = () => {
     const data = { settings, edits, log: postLog, tags: lib.loadTags() };

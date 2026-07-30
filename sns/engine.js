@@ -135,8 +135,15 @@ function buildImagePlan(rng, { product, axis, platform }) {
 
 /* -------------------------- 1件の投稿案 -------------------------- */
 
-function buildProposal(dateKey, platform, variant = 0, salt = 0) {
-  const seed = `${dateKey}|${platform}|${variant}|${salt}`;
+/**
+ * @param {boolean} sync true なら媒体をシードに含めない。
+ *   こうすると Instagram と X で 訴求軸・SKU・フック・画像の文字が一致し、
+ *   「同じ投稿の媒体別バージョン」になる。false なら媒体ごとに独立して振る。
+ */
+function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true) {
+  const seed = sync
+    ? `${dateKey}|${variant}|${salt}`
+    : `${dateKey}|${platform}|${variant}|${salt}`;
   const rng = makeRng(seed);
 
   // 軸は日ごとにローテーション。variant を足して、別案は別の軸になるようにする。
@@ -149,9 +156,11 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0) {
   else skuId = rng() < 0.5 ? 'monster' : 'sova';
   const product = PRODUCTS[skuId];
 
+  // 画像プランを先に決めるのは、乱数の消費順を媒体間でそろえるため。
+  // キャプションは媒体で長さが違い、引く回数も変わるので、後ろに置く。
+  const image = buildImagePlan(rng, { product, axis, platform });
   const caption = buildCaption(rng, { product, axis, platform });
   const hashtags = buildHashtags(rng, { sku: skuId, axis, platform });
-  const image = buildImagePlan(rng, { product, axis, platform });
 
   const fullText = platform === 'ig'
     ? `${caption}\n\n${hashtags.join(' ')}`
@@ -179,17 +188,21 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0) {
  * その日の提案一式。
  * Instagram 1本 + X 1本を既定とし、それぞれ別案を variant で出せる。
  */
-export function generateDailyPlan(dateKey = jstDateKey(), variants = { ig: 0, x: 0 }) {
-  const ig = buildProposal(dateKey, 'ig', variants.ig || 0);
-  let x = buildProposal(dateKey, 'x', variants.x || 0);
+export function generateDailyPlan(dateKey = jstDateKey(), variants = { ig: 0, x: 0 }, opts = {}) {
+  const sync = opts.sync !== false; // 既定は「そろえる」
+  const ig = buildProposal(dateKey, 'ig', variants.ig || 0, 0, sync);
+  let x = buildProposal(dateKey, 'x', variants.x || 0, 0, sync);
 
-  // 同じ日の2本が同じ書き出しになると手抜きに見えるので、salt を振り直して回避する。
-  const firstLine = (p) => p.caption.split('\n')[0];
-  for (let salt = 1; salt <= 8 && firstLine(x) === firstLine(ig); salt++) {
-    x = buildProposal(dateKey, 'x', variants.x || 0, salt);
+  // 独立生成のときだけ、2本が同じ書き出しになるのを避ける。
+  // そろえる設定では一致しているのが正しい状態なので何もしない。
+  if (!sync) {
+    const firstLine = (p) => p.caption.split('\n')[0];
+    for (let salt = 1; salt <= 8 && firstLine(x) === firstLine(ig); salt++) {
+      x = buildProposal(dateKey, 'x', variants.x || 0, salt, false);
+    }
   }
 
-  return { dateKey, generatedAt: new Date().toISOString(), posts: [ig, x] };
+  return { dateKey, sync, generatedAt: new Date().toISOString(), posts: [ig, x] };
 }
 
 export { buildProposal, AXES, PRODUCTS };
