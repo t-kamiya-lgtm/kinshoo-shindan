@@ -53,16 +53,71 @@ export function normalizeName(name) {
 
 const CATALOG_BY_NORM = new Map(IMAGE_CATALOG.map((c) => [normalizeName(c.file), c]));
 
-/** File[] を取り込む。カタログ外のファイルも受け入れる（追加素材として登録）。 */
-export async function importFiles(fileList) {
-  const result = { added: 0, matched: 0, skipped: 0, extras: [] };
-  const files = [...fileList].filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
+/** 画像として扱えるファイルだけに絞る */
+function imageFilesOnly(fileList) {
+  return [...fileList].filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
+}
+
+/** ライブラリに登録されるときのキー（カタログに一致すればカタログ側の名前） */
+function keyFor(file) {
+  const cat = CATALOG_BY_NORM.get(normalizeName(file.name));
+  return cat ? cat.file : file.name;
+}
+
+/**
+ * 取り込む前に、既にあるものと名前がぶつかるファイルを洗い出す。
+ * 黙って上書きすると元の画像が失われるので、必ずこれを先に通す。
+ * @returns {{duplicates: Array<{file: File, key: string, existing: object}>, fresh: File[], skipped: number}}
+ */
+export async function inspectFiles(fileList) {
+  const files = imageFilesOnly(fileList);
+  const stored = await listStored();
+  const byKey = new Map(stored.map((s) => [s.key, s]));
+
+  const duplicates = [];
+  const fresh = [];
+  const seenInBatch = new Set();
+  for (const file of files) {
+    const key = keyFor(file);
+    const existing = byKey.get(key);
+    // 同じ選択の中に同名が2つある場合も重複として扱う
+    if (existing || seenInBatch.has(key)) {
+      duplicates.push({ file, key, existing: existing || null });
+    } else {
+      fresh.push(file);
+    }
+    seenInBatch.add(key);
+  }
+  return { duplicates, fresh, skipped: fileList.length - files.length };
+}
+
+/**
+ * File[] を取り込む。カタログ外のファイルも受け入れる（追加素材として登録）。
+ * @param {FileList|File[]} fileList
+ * @param {{overwrite?: boolean}} opts overwrite が false のときは同名を飛ばす
+ */
+export async function importFiles(fileList, opts = {}) {
+  const overwrite = opts.overwrite !== false;
+  const result = { added: 0, matched: 0, skipped: 0, overwritten: 0, skippedDup: [], extras: [] };
+  const files = imageFilesOnly(fileList);
   result.skipped = fileList.length - files.length;
+
+  const stored = await listStored();
+  const existingKeys = new Set(stored.map((s) => s.key));
 
   for (const file of files) {
     const norm = normalizeName(file.name);
     const cat = CATALOG_BY_NORM.get(norm);
     const key = cat ? cat.file : file.name;
+
+    if (existingKeys.has(key)) {
+      if (!overwrite) {
+        result.skippedDup.push(key);
+        continue;
+      }
+      result.overwritten++;
+    }
+
     const blob = file.slice(0, file.size, file.type || 'image/jpeg');
     await tx('readwrite', (store) =>
       store.put({
@@ -76,6 +131,7 @@ export async function importFiles(fileList) {
         blob
       })
     );
+    existingKeys.add(key);
     result.added++;
     if (cat) result.matched++;
     else result.extras.push(file.name);

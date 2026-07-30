@@ -758,16 +758,67 @@ async function renderLibrary() {
   }
 }
 
+/**
+ * 重複を知らせて、どうするか選んでもらう。
+ * 戻り値は 'overwrite' | 'skip' | 'cancel'。
+ */
+function askAboutDuplicates(duplicates, freshCount) {
+  const back = $('#dup-modal');
+  const names = duplicates.map((d) => d.key);
+  $('#dup-lead').textContent =
+    `選んだファイルのうち ${duplicates.length}点が、すでにライブラリにある画像と同じ名前です`
+    + (freshCount ? `（残り ${freshCount}点は新規）。` : '。');
+  $('#dup-list').textContent = names.join('\n');
+  back.hidden = false;
+
+  return new Promise((resolve) => {
+    const done = (choice) => {
+      back.hidden = true;
+      document.removeEventListener('keydown', onKey);
+      resolve(choice);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') done('cancel'); };
+    document.addEventListener('keydown', onKey);
+    $('#dup-overwrite').onclick = () => done('overwrite');
+    $('#dup-skip').onclick = () => done('skip');
+    $('#dup-cancel').onclick = () => done('cancel');
+    $('#dup-copy').onclick = () => copyText(names.join('\n'));
+    back.onclick = (e) => { if (e.target === back) done('cancel'); };
+    $('#dup-overwrite').focus();
+  });
+}
+
 function setupDropzone() {
   const dz = $('#dropzone');
   const onFiles = async (files) => {
     if (!files || !files.length) return;
+
+    // 黙って上書きすると元の画像が消えるので、先に名前の衝突を調べる
+    const { duplicates, fresh, skipped } = await lib.inspectFiles(files);
+    let overwrite = true;
+    let list = files;
+
+    if (duplicates.length) {
+      const choice = await askAboutDuplicates(duplicates, fresh.length);
+      if (choice === 'cancel') {
+        toast('取り込みをやめました');
+        return;
+      }
+      overwrite = choice === 'overwrite';
+    }
+
     toast('取り込み中…');
-    const r = await lib.importFiles(files);
+    const r = await lib.importFiles(list, { overwrite });
     stored = await lib.listStored();
     // 取り込んだ画像はレシピ画面の候補にもなるので、画面全体を作り直す。
     await refresh();
-    toast(`${r.added}点を取り込みました（カタログ一致 ${r.matched}点）`);
+
+    const parts = [`${r.added}点を取り込みました`];
+    if (r.matched) parts.push(`カタログ一致 ${r.matched}点`);
+    if (r.overwritten) parts.push(`上書き ${r.overwritten}点`);
+    if (r.skippedDup.length) parts.push(`同名を飛ばした ${r.skippedDup.length}点`);
+    if (skipped) parts.push(`画像以外を除外 ${skipped}点`);
+    toast(parts.join(' / '));
   };
 
   ['dragenter', 'dragover'].forEach((ev) =>
@@ -775,7 +826,14 @@ function setupDropzone() {
   ['dragleave', 'drop'].forEach((ev) =>
     dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('over'); }));
   dz.addEventListener('drop', (e) => onFiles(e.dataTransfer.files));
-  $('#file-input').addEventListener('change', (e) => onFiles(e.target.files));
+  $('#file-input').addEventListener('change', async (e) => {
+    const input = e.target;
+    const files = input.files;
+    // 選択を空に戻しておく。そうしないと、同じファイルを選び直したときに
+    // change が発火せず、やり直しができない。
+    await onFiles(files);
+    input.value = '';
+  });
 }
 
 /* ============================ スペック ============================ */

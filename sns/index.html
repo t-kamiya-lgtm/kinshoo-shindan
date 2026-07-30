@@ -184,6 +184,24 @@
   </section>
 </main>
 
+<div class="modal-back" id="dup-modal" hidden>
+  <div class="modal" role="dialog" aria-labelledby="dup-title" aria-modal="true">
+    <h2 id="dup-title">同じ名前の画像が既にあります</h2>
+    <p class="modal-lead" id="dup-lead"></p>
+    <pre class="dup-list" id="dup-list"></pre>
+    <p class="hint">
+      上書きすると、ライブラリにある同名の画像は差し替わります（タグは残ります）。
+      別の写真として両方残したい場合は、いったんやめてファイル名を変えてから取り込み直してください。
+    </p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="dup-cancel">やめる（ファイル名を直す）</button>
+      <button class="btn ghost" id="dup-copy">重複した名前をコピー</button>
+      <button class="btn ghost" id="dup-skip">重複を飛ばして取り込む</button>
+      <button class="btn" id="dup-overwrite">上書きして取り込む</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <script type="module" src="./app.js"></script>
