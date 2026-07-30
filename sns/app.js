@@ -5,9 +5,23 @@ import { PRODUCTS, COMMON, COMPARISONS, DATA_NOTES } from './data/products.js';
 import { TAG_VOCAB, DRIVE_FOLDER_URL, IMAGE_CATALOG } from './data/images.js';
 import * as lib from './library.js';
 import * as composer from './composer.js';
-import * as recipeArt from './recipe.js';
-import { RECIPES, OUTRO, SWIPE_BAR, getRecipe, resolveRecipe } from './data/recipes.js';
 import { HASHTAGS } from './data/copy.js';
+
+// レシピ機能は後から読み込む。静的 import にすると、レシピ関連のファイルが
+// 1つ欠けただけでモジュール全体が読めず、ダッシュボードが真っ白になってしまう。
+let recipeArt = null;
+let recipeData = null;
+let recipeLoadError = null;
+
+async function loadRecipeModules() {
+  try {
+    recipeArt = await import('./recipe.js');
+    recipeData = await import('./data/recipes.js');
+  } catch (err) {
+    recipeLoadError = err;
+    console.warn('レシピ機能を読み込めませんでした:', err);
+  }
+}
 
 /* ============================ 状態 ============================ */
 
@@ -46,7 +60,7 @@ let postLog = load(LS.log, { entries: [] });
 if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
 
 // レシピ画面の状態。選んだレシピ・写真・編集したキャプションを覚えておく。
-let recipeState = load(LS.recipe, { key: RECIPES[0] ? RECIPES[0].key : null, heroKey: '', captions: {} });
+let recipeState = load(LS.recipe, { key: null, heroKey: '', captions: {} });
 if (!recipeState.captions) recipeState.captions = {};
 
 let dateKey = jstDateKey();
@@ -553,6 +567,19 @@ async function renderRecipeView() {
   const slidesBox = $('#recipe-slides');
   const sel = $('#recipe-select');
   const heroSel = $('#recipe-hero');
+  if (!notice || !slidesBox || !sel || !heroSel) return; // 画面が古い場合
+
+  if (!recipeArt || !recipeData) {
+    notice.hidden = false;
+    notice.textContent =
+      'レシピ機能のファイル（recipe.js / data/recipes.js）が読み込めませんでした。'
+      + 'この2つがアップロードされているか確認してください。'
+      + (recipeLoadError ? `（${recipeLoadError.message}）` : '');
+    slidesBox.replaceChildren();
+    return;
+  }
+
+  const { RECIPES, OUTRO, SWIPE_BAR, getRecipe, resolveRecipe } = recipeData;
 
   if (!RECIPES.length) {
     notice.hidden = false;
@@ -958,12 +985,23 @@ function renderSettings() {
 /* ============================ 起動 ============================ */
 
 async function refresh() {
-  await renderProposals();
-  await renderLibrary();
-  await renderRecipeView();
-  renderSpec();
-  renderLog();
-  renderSettings();
+  // どこか1つが失敗しても、残りの画面は描けるようにする。
+  const steps = [
+    ['今日の提案', renderProposals],
+    ['画像ライブラリ', renderLibrary],
+    ['レシピ投稿', renderRecipeView],
+    ['スペック', renderSpec],
+    ['投稿ログ', renderLog],
+    ['設定', renderSettings]
+  ];
+  for (const [name, fn] of steps) {
+    try {
+      await fn();
+    } catch (err) {
+      console.error(`${name} の描画に失敗しました:`, err);
+      toast(`${name} の表示に失敗しました（コンソールを確認してください）`);
+    }
+  }
   document.documentElement.style.setProperty('--accent', settings.accent);
 }
 
@@ -987,6 +1025,10 @@ function setupTabs() {
 }
 
 async function boot() {
+  await loadRecipeModules();
+  if (recipeData && !recipeState.key && recipeData.RECIPES[0]) {
+    recipeState.key = recipeData.RECIPES[0].key;
+  }
   setupTabs();
   setupDropzone();
   $('#date-input').value = dateKey;
