@@ -15,7 +15,7 @@ const LS = {
 };
 
 const defaultSettings = {
-  accent: '#d7ff3e',
+  accent: '#f0821e', // ブランドのオレンジ
   igAspect: '4:5',
   xAspect: '16:9',
   prMode: false
@@ -28,6 +28,12 @@ const load = (k, fb) => {
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 let settings = load(LS.settings, defaultSettings);
+// 初期のアクセントカラーは黄緑だったが、ブランドカラーはオレンジだった。
+// 既存の保存値が旧既定値そのままなら、ブランドカラーへ寄せる（自分で変えた色は尊重する）。
+if (settings.accent === '#d7ff3e') {
+  settings.accent = defaultSettings.accent;
+  save(LS.settings, settings);
+}
 let edits = load(LS.edits, {});
 let postLog = load(LS.log, { entries: [] });
 if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
@@ -101,6 +107,14 @@ function patchEdit(postId, patch) {
   save(LS.edits, edits);
 }
 
+/** 画像に載せる文字を1本の文字列にまとめる（法令チェックにかけるため） */
+function overlayText(ov) {
+  if (!ov) return '';
+  return [ov.eyebrow, ov.lead, ov.big, ov.suffix, ov.sub,
+    ...(ov.chips || []).map((c) => `${c.k}${c.v}`)]
+    .filter(Boolean).join(' ');
+}
+
 /* ============================ 直近の使用状況 ============================ */
 //
 // 投稿ログを見て「最近使った写真・最近使った書き出し」を避ける。
@@ -154,22 +168,28 @@ async function renderProposals() {
   // 候補が尽きた場合は pickImage が全体から選び直すので、行き止まりにはならない。
   const usedKeys = recentImageKeys();
 
-  for (const raw of plan.posts) {
+  // まず両方の画像を確定させる。カード側の「別の写真」が相手と衝突しないよう、
+  // 決まった組み合わせを両方のカードに渡す必要がある。
+  const assigned = plan.posts.map((raw) => {
     const post = withEdits(raw);
-
-    // 画像の決定：手動指定があればそれ、なければタグからの自動選択
     let imageItem = null;
     if (post.imageKey) imageItem = stored.find((s) => s.key === post.imageKey) || null;
     if (!imageItem && stored.length) {
       imageItem = lib.pickImage(stored, post.image, post.id, usedKeys);
     }
     if (imageItem) usedKeys.push(imageItem.key);
+    return { post, imageItem };
+  });
 
-    list.append(buildPostCard(post, imageItem));
+  for (const { post, imageItem } of assigned) {
+    const siblingKeys = assigned
+      .filter((a) => a.post.id !== post.id && a.imageItem)
+      .map((a) => a.imageItem.key);
+    list.append(buildPostCard(post, imageItem, siblingKeys));
   }
 }
 
-function buildPostCard(post, imageItem) {
+function buildPostCard(post, imageItem, siblingKeys = []) {
   const platformLabel = post.platform === 'ig' ? 'Instagram フィード' : 'X';
   const limit = post.platform === 'ig' ? IG_MAX : X_SAFE;
   const isComposite = post.image.mode === 'composite';
@@ -181,6 +201,7 @@ function buildPostCard(post, imageItem) {
   const hookDup = recentHookUse(post.caption.split('\n')[0]);
   const usage = imageUsage().get(imageItem ? imageItem.key : '');
   const imageDup = usage && daysAgo(usage.lastAt) <= RECENT_IMAGE_DAYS;
+  const sameAsSibling = imageItem && siblingKeys.includes(imageItem.key);
 
   /* --- ヘッダ --- */
   card.append(
@@ -192,7 +213,8 @@ function buildPostCard(post, imageItem) {
         el('span', { class: 'chip' }, isComposite ? '写真＋文字合成' : '写真そのまま'),
         posted ? el('span', { class: 'chip accent' }, '投稿済み') : null,
         hookDup ? el('span', { class: 'chip dup' }, `書き出し重複（${hookDup.dateKey}）`) : null,
-        imageDup ? el('span', { class: 'chip dup' }, `この写真は${Math.round(daysAgo(usage.lastAt))}日前にも使用`) : null
+        imageDup ? el('span', { class: 'chip dup' }, `この写真は${Math.round(daysAgo(usage.lastAt))}日前にも使用`) : null,
+        sameAsSibling ? el('span', { class: 'chip dup' }, 'もう1本と同じ写真') : null
       )
     )
   );
@@ -203,7 +225,9 @@ function buildPostCard(post, imageItem) {
   if (imageItem) canvasBox.append(canvas);
   else canvasBox.append(el('div', { class: 'canvas-empty' }, '画像が未取込です。ライブラリに画像を追加してください。'));
 
+  // 既定は設定タブの値。個別に変えたぶんだけ post.image.aspect に残る。
   const aspect = post.image.aspect || (post.platform === 'ig' ? settings.igAspect : settings.xAspect);
+  const overlay = post.image.overlay;
 
   const redraw = async () => {
     if (!imageItem) return;
@@ -237,10 +261,16 @@ function buildPostCard(post, imageItem) {
       el('button', {
         class: 'btn ghost small',
         onclick: () => {
-          // 同じ条件で別の写真へ。取込済みリストを1つずらす。
+          // 同じ条件で別の写真へ。もう1本が使っている写真は飛ばす。
           if (!stored.length) return;
-          const i = imageItem ? stored.findIndex((s) => s.key === imageItem.key) : -1;
-          patchEdit(post.id, { imageKey: stored[(i + 1) % stored.length].key });
+          let i = imageItem ? stored.findIndex((s) => s.key === imageItem.key) : -1;
+          for (let step = 1; step <= stored.length; step++) {
+            const cand = stored[(i + step + stored.length) % stored.length];
+            if (!siblingKeys.includes(cand.key) || stored.length <= 1) {
+              patchEdit(post.id, { imageKey: cand.key });
+              break;
+            }
+          }
           refresh();
         }
       }, '別の写真'),
@@ -249,35 +279,62 @@ function buildPostCard(post, imageItem) {
       }, ...Object.entries(composer.ASPECTS).map(([k, v]) =>
         el('option', { value: k, selected: k === aspect ? 'selected' : null }, v.label)))
     ),
-    isComposite && post.image.overlay
-      ? el('div', { class: 'row' },
-          el('input', {
-            type: 'text',
-            value: post.image.overlay.big || '',
-            placeholder: '画像に載せる大きい文字',
-            oninput: (e) => {
-              const ov = { ...post.image.overlay, big: e.target.value };
-              patchEdit(post.id, { overlay: ov });
-              post.image.overlay = ov;
-              redraw();
-              renderOverlayCompliance();
-            }
-          }),
-          el('input', {
-            type: 'text',
-            value: post.image.overlay.sub || '',
-            placeholder: '小さい方の文字',
-            oninput: (e) => {
-              const ov = { ...post.image.overlay, sub: e.target.value };
-              patchEdit(post.id, { overlay: ov });
-              post.image.overlay = ov;
-              redraw();
-              renderOverlayCompliance();
-            }
-          })
-        )
-      : null
+    isComposite && overlay ? buildOverlayEditor() : null
   );
+
+  /** 画像に載せる文字の編集欄。テンプレートごとに使う項目が違う。 */
+  function buildOverlayEditor() {
+    const patchOverlay = (patch) => {
+      const ov = { ...post.image.overlay, ...patch };
+      patchEdit(post.id, { overlay: ov });
+      post.image.overlay = ov;
+      redraw();
+      renderOverlayCompliance();
+    };
+
+    const field = (key, placeholder, multiline = false) =>
+      el(multiline ? 'textarea' : 'input', {
+        ...(multiline ? { rows: 2 } : { type: 'text' }),
+        placeholder,
+        oninput: (e) => patchOverlay({ [key]: e.target.value })
+      });
+
+    const withValue = (node, v) => {
+      node.value = v ?? '';
+      return node;
+    };
+
+    const rows = [
+      el('div', { class: 'row' },
+        el('select', {
+          class: 'grow',
+          onchange: (e) => patchOverlay({ template: e.target.value })
+        }, ...Object.entries(composer.TEMPLATES).map(([k, label]) =>
+          el('option', { value: k, selected: k === (overlay.template || 'hook') ? 'selected' : null }, label))),
+        el('button', {
+          class: 'btn ghost small',
+          onclick: () => {
+            // 自動生成の文字に戻す
+            const e2 = edits[post.id];
+            if (e2) { delete e2.overlay; save(LS.edits, edits); }
+            refresh();
+          }
+        }, '文字を戻す')
+      ),
+      withValue(field('eyebrow', 'ラベル（オレンジの角丸）'), overlay.eyebrow)
+    ];
+
+    if ((overlay.template || 'hook') === 'stat') {
+      rows.push(withValue(field('lead', '数字の上の小見出し'), overlay.lead));
+      rows.push(withValue(field('big', '数字'), overlay.big));
+      rows.push(withValue(field('suffix', '数字の下の文字'), overlay.suffix));
+    } else {
+      rows.push(withValue(field('big', '見出し（改行できます）', true), overlay.big));
+      rows.push(withValue(field('sub', '小さい方の説明'), overlay.sub));
+    }
+
+    return el('div', { class: 'overlay-editor' }, ...rows);
+  }
 
   card.append(el('div', { class: 'preview-wrap' }, canvasBox, controls));
 
@@ -323,7 +380,7 @@ function buildPostCard(post, imageItem) {
   function renderOverlayCompliance() {
     const ov = post.image.overlay;
     if (!isComposite || !ov) { overlayComp.hidden = true; return; }
-    const t = [ov.big, ov.label, ov.sub, ...(ov.items || []).map((i) => `${i.k}${i.v}`)].filter(Boolean).join(' ');
+    const t = overlayText(ov);
     const r = checkCompliance(t);
     overlayComp.replaceChildren();
     if (r.ok && !r.warns.length) { overlayComp.hidden = true; return; }

@@ -155,40 +155,126 @@ export const HASHTAGS = {
 
 /* ------------------------------------------------------------------ *
  * 画像に載せる文字（合成モード用）。
- * layout: 'stat' 大きな数値 / 'hook' 帯コピー / 'spec' 3項目並び
+ *
+ * 実際の @protein.monster_official の投稿デザインに合わせた3つの型。
+ *   template 'stat' … オレンジ帯の上に極太数字。数値訴求。
+ *   template 'hook' … 見出し2行。コピー訴求。
+ *   template 'band' … 上下の黒帯。パッケージ的な統一感。
+ *
+ * フィールド:
+ *   eyebrow … オレンジの角丸ラベル（前置き）
+ *   lead    … stat のとき、数字の上に置く小見出し
+ *   big     … 主役の文字（stat では数値、hook/band では見出し）
+ *   suffix  … stat のとき、数字の下に置く後置き
+ *   sub     … 小さい方の説明
+ *   chips   … 下部に並べるスペック
  * ------------------------------------------------------------------ */
+
+/** スペックのチップ。数値は products.js から差し込む。 */
+const chips = (p, n) => [
+  { k: 'たんぱく質', v: `${n.protein}g` },
+  { k: '食物繊維', v: `${n.fiber}g` },
+  { k: '糖質', v: `${n.sugar}g` }
+];
+
 export const OVERLAYS = {
   workout: [
-    (p, n) => ({ layout: 'stat', big: `${n.protein}g`, label: 'たんぱく質 / 1食', sub: `${p.nameJa}` }),
-    (p, n) => ({ layout: 'hook', big: `飲むより、食べる。`, sub: `たんぱく質${n.protein}g・${p.boilMin}分ゆでるだけ` }),
-    (p, n) => ({ layout: 'spec', items: [
-      { k: 'たんぱく質', v: `${n.protein}g` },
-      { k: '糖質', v: `${n.sugar}g` },
-      { k: 'エネルギー', v: `${n.kcal}kcal` }
-    ], sub: `1食（${p.servingG}g）あたり` })
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '一味違うプロテイン麺',
+      lead: '一食に たんぱく質',
+      big: `${n.protein}g`,
+      suffix: 'の衝撃を。',
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: '一味違うプロテイン麺',
+      big: '飲むより、\n食べる。',
+      sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: `1食${p.servingG}gあたり`,
+      big: 'シェイカーは、\nもう洗わない。',
+      sub: `お鍋で${p.boilMin}分ゆでるだけ。${p.nameJa}`,
+      chips: chips(p, n)
+    })
   ],
+
   diet: [
-    (p, n) => ({ layout: 'stat', big: `${n.kcal}`, label: 'kcal / 1食', sub: `たんぱく質${n.protein}g・糖質${n.sugar}g` }),
-    (p, n) => ({ layout: 'spec', items: [
-      { k: 'エネルギー', v: `${n.kcal}kcal` },
-      { k: 'たんぱく質', v: `${n.protein}g` },
-      { k: '糖質', v: `${n.sugar}g` }
-    ], sub: `1食（${p.servingG}g）あたり` }),
-    (p, n) => ({ layout: 'hook', big: `主食を、入れ替える。`, sub: `1食${n.kcal}kcal / たんぱく質${n.protein}g` })
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '主食置き換えという選択',
+      lead: '1食あたり',
+      big: `${n.kcal}`,
+      suffix: `kcal でこの満足感。`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: `1食${p.servingG}gあたり`,
+      big: '主食を、入れ替える。',
+      sub: `${n.kcal}kcal・たんぱく質${n.protein}g・糖質${n.sugar}g`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: '主食置き換えという選択',
+      big: '我慢ではなく、\n入れ替える。',
+      sub: `${p.nameJa}／1食${n.kcal}kcal`,
+      chips: chips(p, n)
+    })
   ],
+
   time: [
-    (p, n) => ({ layout: 'stat', big: `${p.boilMin}分`, label: 'ゆでるだけ', sub: `${p.nameJa}` }),
-    (p, n) => ({ layout: 'hook', big: `鍋ひとつ、${p.boilMin}分。`, sub: `${p.recipes[0].name} / たんぱく質${n.protein}g` }),
-    (p, n) => ({ layout: 'hook', big: `めんつゆだけでいい日。`, sub: `ゆで時間${p.boilMin}分・たんぱく質${n.protein}g` })
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: `ゆで時間${p.boilMin}分`,
+      big: 'お湯に入れて、\nそれだけ。',
+      sub: `${p.recipes[0].name}／${p.nameJa}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: `ゆで時間${p.boilMin}分`,
+      big: 'めんつゆだけで\nいい日がある。',
+      sub: `鍋ひとつ、${p.boilMin}分。${p.nameJa}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '鍋ひとつでできる',
+      big: `${p.recipes[0].name}`,
+      sub: `${p.recipes[0].note}／ゆで時間${p.boilMin}分`,
+      chips: chips(p, n)
+    })
   ],
+
   trust: [
-    (p, n) => ({ layout: 'hook', big: `保存料・着色料\n不使用。`, sub: `${p.nameJa}` }),
-    (p, n) => ({ layout: 'spec', items: [
-      { k: '保存料', v: '不使用' },
-      { k: '着色料', v: '不使用' },
-      { k: '人工甘味料', v: '不使用' }
-    ], sub: `${p.nameJa}` }),
-    (p, n) => ({ layout: 'stat', big: `${n.protein}g`, label: 'たんぱく質 / 1食', sub: `国際認証取得工場で製造` })
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '原材料はシンプルに',
+      big: '保存料・着色料\n不使用。',
+      sub: `${p.nameJa}／${p.category}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '国際認証取得工場で製造',
+      big: 'つくる場所から、\n見せます。',
+      sub: 'FSSC22000・BRC・FDA の基準を満たした工場',
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '一味違うプロテイン麺',
+      lead: '一食に たんぱく質',
+      big: `${n.protein}g`,
+      suffix: '国際認証取得工場で製造。',
+      chips: chips(p, n)
+    })
   ]
 };
 

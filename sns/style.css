@@ -5,8 +5,8 @@
   --line: #2c3037;
   --text: #e9ecf1;
   --muted: #9aa3af;
-  --accent: #d7ff3e;
-  --accent-dim: rgba(215, 255, 62, 0.14);
+  --accent: #f0821e;
+  --accent-dim: rgba(240, 130, 30, 0.16);
   --danger: #ff6b6b;
   --warn: #ffc861;
   --ok: #5ad39a;
@@ -36,7 +36,7 @@ a { color: var(--accent); }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-mark {
   width: 40px; height: 40px; border-radius: 10px;
-  background: var(--accent); color: #111;
+  background: var(--accent); color: #fff;
   display: grid; place-items: center;
   font-weight: 700; letter-spacing: -0.02em; font-size: 16px;
 }
@@ -146,7 +146,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 
 /* ---------------- buttons ---------------- */
 .btn {
-  background: var(--accent); color: #111; border: none;
+  background: var(--accent); color: #fff; border: none;
   border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 700;
   font-family: var(--font); cursor: pointer; display: inline-flex;
   align-items: center; gap: 6px; transition: filter .15s, opacity .15s;
@@ -180,7 +180,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
   border-radius: 20px; padding: 5px 12px; font-size: 12px;
   font-family: var(--font); cursor: pointer;
 }
-.chip-btn.active { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 700; }
+.chip-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
 
 .lib-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .lib-item {
@@ -203,7 +203,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
   padding: 2px 8px; border-radius: 20px; font-weight: 700;
   background: rgba(0,0,0,.72); color: var(--muted); border: 1px solid var(--line);
 }
-.lib-uses.unused { background: var(--accent); color: #111; border-color: var(--accent); }
+.lib-uses.unused { background: var(--accent); color: #fff; border-color: var(--accent); }
 .lib-body { padding: 10px 12px; }
 .lib-name { font-size: 11px; color: var(--muted); word-break: break-all; margin-bottom: 8px; }
 .tag-group { margin-bottom: 6px; }
@@ -214,7 +214,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
   background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
   user-select: none;
 }
-.tag.on { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 700; }
+.tag.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
 
 /* ---------------- generic ---------------- */
 .card {
@@ -244,7 +244,17 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  background: var(--accent); color: #111; padding: 10px 20px;
+  background: var(--accent); color: #fff; padding: 10px 20px;
   border-radius: 30px; font-size: 13px; font-weight: 700; z-index: 100;
   box-shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+
+/* 画像に載せる文字の編集欄 */
+.overlay-editor { display: grid; gap: 7px; margin-top: 4px; }
+.overlay-editor textarea { min-height: 54px; }
+.overlay-editor select.grow { flex: 1; }
+.img-controls select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 7px 9px; font-family: var(--font); font-size: 12px;
+  max-width: 100%;
 }

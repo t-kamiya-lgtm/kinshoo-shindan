@@ -6,6 +6,7 @@
 // を確認する。素材ライブラリ（copy.js）を編集したら必ず実行すること。
 
 import { generateDailyPlan, jstDateKey } from './engine.js';
+import { checkCompliance } from './compliance.js';
 
 const X_LIMIT = 280;        // X の全角換算上限（日本語は1文字2カウントだが、ここでは安全側で文字数で見る）
 const X_SAFE_CHARS = 135;   // 日本語主体の投稿として安全な文字数
@@ -15,6 +16,7 @@ let errors = 0;
 let warnCount = 0;
 const seenAxes = new Set();
 const seenSkus = new Set();
+const templateUse = {};
 let compositeCount = 0;
 let rawCount = 0;
 let total = 0;
@@ -57,14 +59,20 @@ for (let d = 0; d < 365; d++) {
       // 画像に載せる文字も検査対象
       if (post.image.overlay) {
         const ov = post.image.overlay;
-        const t = [ov.big, ov.label, ov.sub, ...(ov.items || []).map((i) => `${i.k}${i.v}`)]
+        const t = [ov.eyebrow, ov.lead, ov.big, ov.suffix, ov.sub,
+          ...(ov.chips || []).map((c) => `${c.k}${c.v}`)]
           .filter(Boolean).join(' ');
-        const r = (await import('./compliance.js')).checkCompliance(t);
+        const r = checkCompliance(t);
         if (!r.ok) {
           errors++;
           console.error(`\n[画像文字NG] ${post.id}: ${t}`);
           r.blocks.forEach((b) => console.error(`   ${b.law}: 「${b.matched}」`));
         }
+        if (!['stat', 'hook', 'band'].includes(ov.template)) {
+          errors++;
+          console.error(`\n[テンプレート不正] ${post.id}: ${ov.template}`);
+        }
+        templateUse[ov.template] = (templateUse[ov.template] || 0) + 1;
       }
     }
   }
@@ -74,6 +82,7 @@ console.log(`\n検査した投稿案: ${total}件`);
 console.log(`使われた訴求軸: ${[...seenAxes].join(', ')}`);
 console.log(`使われたSKU: ${[...seenSkus].join(', ')}`);
 console.log(`画像モード: 合成 ${compositeCount}件 / そのまま ${rawCount}件`);
+console.log(`合成テンプレート: ${Object.entries(templateUse).map(([k, v]) => `${k} ${v}件`).join(' / ')}`);
 console.log(`警告（要確認）: 延べ ${warnCount}件`);
 console.log(errors === 0 ? '\n✅ 法令チェック・文字数チェックともに問題なし' : `\n❌ ${errors}件の問題`);
 process.exit(errors === 0 ? 0 : 1);

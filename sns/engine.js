@@ -110,7 +110,9 @@ function buildCaption(rng, { product, axis, platform }) {
  */
 function buildImagePlan(rng, { product, axis, platform }) {
   const mode = rng() < 0.5 ? 'composite' : 'raw';
-  const overlay = mode === 'composite' ? pick(rng, OVERLAYS[axis])(product, product.nutrition) : null;
+  // 文字は「そのまま」の案でも用意しておく。ダッシュボードで「文字を載せる」に
+  // 切り替えたときに、載せる文字が無いと何も起きないため。
+  const overlay = pick(rng, OVERLAYS[axis])(product, product.nutrition);
 
   // 軸ごとに相性のよい被写体
   const preferScene = {
@@ -123,11 +125,11 @@ function buildImagePlan(rng, { product, axis, platform }) {
   return {
     mode,
     overlay,
-    aspect: platform === 'ig' ? '4:5' : '16:9',
+    // 書き出し比率はダッシュボードの設定で決める（投稿ごとに個別変更も可）。
     preferScene,
     preferSku: product.id,
     // 合成する場合、文字を置く側に余白のある写真を優先する
-    preferSpace: overlay && overlay.layout === 'hook' ? 'space-bottom' : 'space-top'
+    preferSpace: overlay.template === 'stat' ? 'space-bottom' : 'space-top'
   };
 }
 
