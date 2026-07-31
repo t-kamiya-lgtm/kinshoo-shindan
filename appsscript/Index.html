@@ -1,0 +1,5205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTEIN MONSTER｜SNS投稿ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" onerror="this.remove()">
+<style>
+:root {
+  --bg: #0e0f11;
+  --panel: #17191d;
+  --panel-2: #1e2126;
+  --line: #2c3037;
+  --text: #e9ecf1;
+  --muted: #9aa3af;
+  --accent: #f0821e;
+  --accent-dim: rgba(240, 130, 30, 0.16);
+  --danger: #ff6b6b;
+  --warn: #ffc861;
+  --ok: #5ad39a;
+  --radius: 14px;
+  --font: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+
+/* ---------------- topbar ---------------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky; top: 0; z-index: 20;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center;
+  font-weight: 700; letter-spacing: -0.02em; font-size: 16px;
+}
+.topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+.brand-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.date-pick { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.date-pick input {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; font-family: var(--font);
+}
+
+/* ---------------- tabs ---------------- */
+.tabs {
+  display: flex; gap: 4px; padding: 0 20px;
+  border-bottom: 1px solid var(--line); background: var(--panel);
+  overflow-x: auto; position: sticky; top: 69px; z-index: 19;
+}
+.tab {
+  background: none; border: none; color: var(--muted);
+  padding: 12px 14px; font-size: 13px; font-family: var(--font);
+  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 700; }
+.badge {
+  display: inline-block; min-width: 20px; padding: 0 6px;
+  background: var(--panel-2); border-radius: 20px;
+  font-size: 11px; color: var(--muted); margin-left: 4px;
+}
+
+main { padding: 20px; max-width: 1280px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ---------------- proposals ---------------- */
+.proposal-list { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 1060px) { .proposal-list { grid-template-columns: 1fr 1fr; } }
+
+.post-card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.post-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.platform { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.platform .dot { width: 8px; height: 8px; border-radius: 50%; }
+.platform.ig .dot { background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7); }
+.platform.x .dot { background: #ffffff; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+}
+.chip.accent { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-dim); }
+.chip.dup { color: var(--warn); border-color: rgba(255, 200, 97, .35); background: rgba(255, 200, 97, .12); }
+
+.preview-wrap { padding: 16px; display: grid; gap: 12px; grid-template-columns: 200px 1fr; align-items: start; }
+@media (max-width: 640px) { .preview-wrap { grid-template-columns: 1fr; } }
+.canvas-box {
+  background: #000; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--line); position: relative; min-height: 120px;
+  display: grid; place-items: center;
+}
+.canvas-box canvas { width: 100%; height: auto; display: block; }
+.canvas-box canvas.zoomable { cursor: zoom-in; }
+.canvas-empty { color: var(--muted); font-size: 12px; padding: 30px 14px; text-align: center; }
+.img-controls { display: flex; flex-direction: column; gap: 8px; }
+.img-meta { font-size: 11px; color: var(--muted); word-break: break-all; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.editor { padding: 0 16px 16px; display: grid; gap: 10px; }
+.editor label { font-size: 12px; color: var(--muted); }
+textarea, input[type="text"] {
+  width: 100%; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; font-family: var(--font); font-size: 13px; line-height: 1.8;
+  resize: vertical;
+}
+textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+.counter { font-size: 11px; color: var(--muted); text-align: right; }
+.counter.over { color: var(--danger); font-weight: 700; }
+
+.compliance { margin: 0 16px 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.comp-head {
+  padding: 9px 12px; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.comp-head.ok { background: rgba(90, 211, 154, 0.12); color: var(--ok); }
+.comp-head.warn { background: rgba(255, 200, 97, 0.12); color: var(--warn); }
+.comp-head.block { background: rgba(255, 107, 107, 0.14); color: var(--danger); }
+.comp-item { padding: 10px 12px; border-top: 1px solid var(--line); font-size: 12px; }
+.comp-item .law { font-weight: 700; margin-right: 6px; }
+.comp-item .matched {
+  background: rgba(255, 107, 107, 0.18); color: #ffd9d9;
+  padding: 1px 6px; border-radius: 5px; font-weight: 700;
+}
+.comp-item .fix { color: var(--muted); display: block; margin-top: 3px; }
+
+.post-actions {
+  padding: 14px 16px; border-top: 1px solid var(--line);
+  background: var(--panel-2); display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+/* ---------------- buttons ---------------- */
+.btn {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 700;
+  font-family: var(--font); cursor: pointer; display: inline-flex;
+  align-items: center; gap: 6px; transition: filter .15s, opacity .15s;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn.small { padding: 6px 10px; font-size: 12px; }
+
+/* ---------------- library ---------------- */
+.dropzone {
+  border: 2px dashed var(--line); border-radius: var(--radius);
+  padding: 30px 20px; text-align: center; background: var(--panel);
+  transition: border-color .15s, background .15s;
+}
+.dropzone.over { border-color: var(--accent); background: var(--accent-dim); }
+.dz-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.dz-sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.dz-note { color: var(--muted); font-size: 11px; margin-top: 12px; }
+
+.lib-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin: 20px 0 12px;
+}
+.lib-stats { font-size: 12px; color: var(--muted); }
+.lib-filters { display: flex; gap: 6px; }
+.chip-btn {
+  background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+  border-radius: 20px; padding: 5px 12px; font-size: 12px;
+  font-family: var(--font); cursor: pointer;
+}
+.chip-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+
+.lib-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.lib-item {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden;
+}
+.lib-thumb {
+  aspect-ratio: 4 / 3; background: #000; display: grid; place-items: center;
+  color: var(--muted); font-size: 11px; overflow: hidden; position: relative;
+}
+.lib-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.lib-status {
+  position: absolute; top: 8px; left: 8px; font-size: 10px;
+  padding: 2px 8px; border-radius: 20px; font-weight: 700;
+}
+.lib-status.stored { background: var(--ok); color: #06301e; }
+.lib-status.missing { background: rgba(0,0,0,.7); color: var(--muted); border: 1px solid var(--line); }
+.lib-uses {
+  position: absolute; top: 8px; right: 8px; font-size: 10px;
+  padding: 2px 8px; border-radius: 20px; font-weight: 700;
+  background: rgba(0,0,0,.72); color: var(--muted); border: 1px solid var(--line);
+}
+.lib-uses.unused { background: var(--accent); color: #fff; border-color: var(--accent); }
+.lib-body { padding: 10px 12px; }
+.lib-name { font-size: 11px; color: var(--muted); word-break: break-all; margin-bottom: 8px; }
+.tag-group { margin-bottom: 6px; }
+.tag-group-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag {
+  font-size: 10px; padding: 3px 8px; border-radius: 20px; cursor: pointer;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  user-select: none;
+}
+.tag.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+
+/* ---------------- generic ---------------- */
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px; margin-bottom: 16px;
+}
+.card h2 { font-size: 14px; margin-bottom: 12px; }
+.card h3 { font-size: 13px; margin: 16px 0 8px; color: var(--accent); }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 13px; }
+.field select, .field input[type="color"] {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; font-family: var(--font);
+}
+.check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; }
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.notice {
+  background: rgba(255, 200, 97, 0.1); border: 1px solid rgba(255, 200, 97, 0.35);
+  color: var(--warn); border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; margin-bottom: 16px;
+}
+.card.danger { border-color: rgba(255, 107, 107, 0.3); }
+
+/* 共有版の上部バー */
+.share-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-right: 12px; }
+.share-bar .who { font-size: 12px; color: var(--muted); }
+.share-bar .save-state { font-size: 11px; color: var(--muted); min-width: 4.5em; }
+.share-bar .save-state.bad { color: #ff6b6b; }
+
+/* 商品（SKU）の切り替え */
+.sku-picker {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px; margin-bottom: 10px;
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.sku-picker .sku-label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+.sku-picker .hint { margin-top: 0; }
+
+/* ブランドロゴの登録欄 */
+.logo-slot { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.logo-slot-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; }
+.logo-preview {
+  display: flex; align-items: center; justify-content: flex-start;
+  min-height: 72px; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px;
+  background-image: linear-gradient(45deg, #2a2c30 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2c30 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2c30 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2c30 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  background-color: #1a1c1f;
+}
+/* 明るい背景用のロゴは、明るい下地に重ねて見せないと確認にならない */
+.logo-preview.onLight {
+  background-image: linear-gradient(45deg, #dcdcdc 25%, transparent 25%),
+    linear-gradient(-45deg, #dcdcdc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #dcdcdc 75%),
+    linear-gradient(-45deg, transparent 75%, #dcdcdc 75%);
+  background-color: #fbe9dc;
+}
+.logo-preview canvas { height: 56px; width: auto; display: block; }
+
+/* 描画に失敗したときに、原因をその場に出すための枠 */
+.notice.danger {
+  background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.4);
+  color: var(--bad, #ff6b6b);
+}
+.view-error-detail {
+  margin: 8px 0; padding: 10px 12px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35); color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+  max-height: 220px; overflow: auto; user-select: text;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #fff; padding: 10px 20px;
+  border-radius: 30px; font-size: 13px; font-weight: 700; z-index: 100;
+  box-shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+
+/* 画像に載せる文字の編集欄 */
+.overlay-editor { display: grid; gap: 7px; margin-top: 4px; }
+.overlay-editor textarea { min-height: 54px; }
+.overlay-editor select.grow { flex: 1; }
+.img-controls select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 7px 9px; font-family: var(--font); font-size: 12px;
+  max-width: 100%;
+}
+
+/* 画像に載せる文字の編集欄 / レシピ投稿 */
+.field-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.field-inline select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 7px 10px; font-family: var(--font); font-size: 13px;
+  max-width: 420px;
+}
+.recipe-slides {
+  display: grid; gap: 14px; margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.recipe-slide {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden;
+}
+.recipe-slide .slide-label {
+  padding: 8px 12px; font-size: 12px; font-weight: 700;
+  border-bottom: 1px solid var(--line); background: var(--panel-2);
+}
+.recipe-slide canvas { width: 100%; height: auto; display: block; cursor: zoom-in; }
+
+/* 重複確認のモーダル */
+.modal-back {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(6, 7, 9, .72);
+  display: grid; place-items: center; padding: 20px;
+}
+.modal-back[hidden] { display: none; }
+.modal {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 22px;
+  max-width: 620px; width: 100%; max-height: 86vh; overflow-y: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+}
+.modal h2 { font-size: 16px; margin-bottom: 8px; }
+.modal-lead { font-size: 13px; color: var(--text); margin-bottom: 12px; }
+.dup-list {
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px; margin-bottom: 12px;
+  max-height: 240px; overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px; line-height: 1.9; color: var(--warn);
+  white-space: pre; overflow-x: auto;
+}
+.modal-actions {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: flex-end; margin-top: 16px;
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">PM</span>
+    <div>
+      <h1>SNS投稿ダッシュボード</h1>
+      <p class="brand-sub">PROTEIN MONSTER / SOVA</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <label class="date-pick">
+      <span>対象日</span>
+      <input type="date" id="date-input">
+    </label>
+    <button class="btn ghost" id="btn-today">今日</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-view="proposals">今日の提案</button>
+  <button class="tab" data-view="library">画像ライブラリ <span class="badge" id="lib-badge">0</span></button>
+  <button class="tab" data-view="recipe">レシピ投稿</button>
+  <button class="tab" data-view="spec">スペック</button>
+  <button class="tab" data-view="log">投稿ログ</button>
+  <button class="tab" data-view="settings">設定</button>
+</nav>
+
+<main>
+  <!-- ============ 今日の提案 ============ -->
+  <section class="view active" id="view-proposals">
+    <div class="notice" id="no-images-notice" hidden>
+      画像ライブラリが空です。<b>「画像ライブラリ」タブ</b>で Drive のフォルダをドラッグ＆ドロップして取り込んでください。取り込むまで画像プレビューは表示されません。
+    </div>
+    <div id="proposal-list" class="proposal-list"></div>
+  </section>
+
+  <!-- ============ 画像ライブラリ ============ -->
+  <section class="view" id="view-library">
+    <div class="dropzone" id="dropzone">
+      <p class="dz-title">画像をここにドラッグ＆ドロップ</p>
+      <p class="dz-sub">
+        <a href="https://drive.google.com/drive/folders/1uXFEWTMOK9SUzummPzaUfwp61pcEpenl" target="_blank" rel="noopener">Drive の素材フォルダ</a>
+        をダウンロードして、フォルダごと放り込んでください。ファイル名でカタログと自動照合します。
+      </p>
+      <label class="btn">
+        ファイルを選ぶ
+        <input type="file" id="file-input" accept="image/*" multiple hidden>
+      </label>
+      <p class="dz-note">画像はこの端末のブラウザ内（IndexedDB）に保存されます。どこにもアップロードされません。</p>
+    </div>
+
+    <div class="lib-toolbar">
+      <div class="lib-stats" id="lib-stats"></div>
+      <div class="lib-filters">
+        <button class="chip-btn active" data-filter="all">すべて</button>
+        <button class="chip-btn" data-filter="stored">取込済み</button>
+        <button class="chip-btn" data-filter="missing">未取込</button>
+        <button class="chip-btn" data-filter="untagged">未タグ</button>
+        <button class="chip-btn" data-filter="unused">未使用</button>
+      </div>
+    </div>
+
+    <div class="lib-grid" id="lib-grid"></div>
+  </section>
+
+  <!-- ============ レシピ投稿 ============ -->
+  <section class="view" id="view-recipe">
+    <div class="notice" id="recipe-notice" hidden></div>
+    <div class="card">
+      <div class="row">
+        <label class="field-inline">
+          <span>レシピ</span>
+          <select id="recipe-select"></select>
+        </label>
+        <label class="field-inline">
+          <span>できあがり写真</span>
+          <select id="recipe-hero"></select>
+        </label>
+      </div>
+      <p class="hint">
+        4枚組のカルーセルとして書き出します。全枚 1080×1350（4:5）で揃えているので、
+        Instagram でトリミングされません。①の背景だけ写真を使い、②③④は文字で組みます。
+      </p>
+    </div>
+
+    <div class="recipe-slides" id="recipe-slides"></div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" id="recipe-download">4枚すべてダウンロード</button>
+        <button class="btn ghost" id="recipe-copy">キャプションをコピー</button>
+        <button class="btn ghost" id="recipe-reset">キャプションを戻す</button>
+      </div>
+      <label style="font-size:12px;color:var(--muted)">キャプション</label>
+      <textarea id="recipe-caption" rows="18"></textarea>
+      <div class="counter" id="recipe-counter"></div>
+    </div>
+
+    <div class="compliance" id="recipe-compliance"></div>
+  </section>
+
+  <!-- ============ スペック ============ -->
+  <section class="view" id="view-spec">
+    <div id="spec-content"></div>
+  </section>
+
+  <!-- ============ 投稿ログ ============ -->
+  <section class="view" id="view-log">
+    <div id="log-content"></div>
+  </section>
+
+  <!-- ============ 設定 ============ -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2>ブランドロゴ</h2>
+      <p class="hint" style="margin-top:0">
+        登録したロゴファイルを<b>そのまま</b>合成に使います（縦横比を保って拡縮するだけで、色・字形・字間は一切変更しません）。
+        背景透過の PNG を推奨します。未登録のあいだは、文字で組んだ代用が描かれます。
+      </p>
+      <div id="logo-slots"></div>
+    </div>
+
+    <div class="card">
+      <h2>画像の見た目</h2>
+      <label class="field">
+        <span>アクセントカラー（数値・見出しの色）</span>
+        <input type="color" id="accent-input">
+      </label>
+      <label class="field">
+        <span>Instagram の書き出しサイズ</span>
+        <select id="ig-aspect">
+          <option value="4:5">縦 4:5（1080×1350）推奨</option>
+          <option value="1:1">正方形 1:1（1080×1080）</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>X の書き出しサイズ</span>
+        <select id="x-aspect">
+          <option value="16:9">横 16:9（1200×675）推奨</option>
+          <option value="1:1">正方形 1:1（1080×1080）</option>
+          <option value="4:5">縦 4:5（1080×1350）</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Instagram と X の関係</h2>
+      <label class="check">
+        <input type="checkbox" id="opt-sync">
+        <span>同じ投稿の媒体別バージョンとして作る</span>
+      </label>
+      <p class="hint">
+        オンのとき、訴求軸・SKU・書き出し・画像の文字・写真が2媒体で一致し、Xだけ本文を短く・タグを少なくします。
+        内容の重複をこちらでコントロールしたいときはオン。まったく別の話題を2本出したいときはオフにしてください。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>チェックの厳しさ</h2>
+      <label class="check">
+        <input type="checkbox" id="opt-pr">
+        <span>タイアップ投稿として運用する（#PR の付け忘れを警告する）</span>
+      </label>
+      <p class="hint">自社アカウントからの自社商品投稿では通常オフのままで構いません。インフルエンサー投稿の再掲や、案件としての投稿を行う場合にオンにしてください。</p>
+    </div>
+
+    <div class="card">
+      <h2>毎朝の通知</h2>
+      <p class="hint" id="cron-hint"></p>
+    </div>
+
+    <div class="card danger">
+      <h2>データ</h2>
+      <p class="hint">タグ・編集内容・投稿ログは、このブラウザにのみ保存されています。</p>
+      <div class="row">
+        <button class="btn ghost" id="btn-export">設定とタグを書き出す</button>
+        <label class="btn ghost">設定とタグを読み込む<input type="file" id="import-json" accept="application/json" hidden></label>
+        <button class="btn danger" id="btn-clear">画像ライブラリを空にする</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-back" id="dup-modal" hidden>
+  <div class="modal" role="dialog" aria-labelledby="dup-title" aria-modal="true">
+    <h2 id="dup-title">同じ名前の画像が既にあります</h2>
+    <p class="modal-lead" id="dup-lead"></p>
+    <pre class="dup-list" id="dup-list"></pre>
+    <p class="hint">
+      上書きすると、ライブラリにある同名の画像は差し替わります（タグは残ります）。
+      別の写真として両方残したい場合は、いったんやめてファイル名を変えてから取り込み直してください。
+    </p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="dup-cancel">やめる（ファイル名を直す）</button>
+      <button class="btn ghost" id="dup-copy">重複した名前をコピー</button>
+      <button class="btn ghost" id="dup-skip">重複を飛ばして取り込む</button>
+      <button class="btn" id="dup-overwrite">上書きして取り込む</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* このファイルは scripts/build-single.mjs が生成しています。直接編集しないでください。
+   直すのは sns/ の中の元ファイルで、そのあと build-single.mjs を回してください。 */
+(function () {
+  'use strict';
+  var __factories = {}, __cache = {};
+  function __def(name, fn) { __factories[name] = fn; }
+  function __req(name) {
+    if (__cache[name]) return __cache[name];
+    var fn = __factories[name];
+    if (!fn) throw new Error('モジュールがありません: ' + name);
+    // 循環参照に備えて、実行前に器を登録しておく
+    var exports = __cache[name] = {};
+    var real = fn(__req);
+    for (var k in real) exports[k] = real[k];
+    return exports;
+  }
+  try {
+__def("data/products.js", function (__req) {
+// 商品スペック（出典: PROTEIN MONSTER 商品説明ドキュメント）
+// ここが唯一の情報源。キャプション内の数値はすべてこのファイルから差し込まれる。
+// 数値を書き換えると、生成される全文面に即反映される。
+
+const PRODUCTS = {
+  monster: {
+    id: 'monster',
+    name: 'PROTEIN MONSTER',
+    nameJa: 'プロテインモンスター',
+    shortJa: 'プロテインモンスター',
+    category: 'えんどう豆タンパク加工食品',
+    kind: 'noodle', // 中華麺・パスタ的に使える麺
+    volume: '55g×10袋',
+    servingG: 55,
+    origin: '中国',
+    storage: '直射日光・高温多湿を避け、涼しい場所に保存',
+    ingredients: 'えんどう豆タンパク粉、植物性たん白、小麦粉、食塩',
+    boilMin: '3〜5',        // 表示用
+    boilRange: [3, 5],     // 計算用。レシピの調理時間の換算に使う
+    cookedWeightG: 90,
+    nutrition: {
+      kcal: 201.3,
+      protein: 31.7,
+      fat: 2.8,
+      carb: 12.8,
+      sugar: 11.9,
+      fiber: 0.9,
+      salt: 1.6
+    },
+    // この SKU 固有の切り口（キャプション生成時のネタ）
+    angles: [
+      'タンパク質31.7g',
+      '糖質11.9g',
+      '主原料は黄えんどう豆',
+      '主食置き換え',
+      'アレンジ自在'
+    ],
+    recipes: [
+      { name: '豆乳担担麺風', note: 'ピリ辛が好きな日に' },
+      { name: 'サラダパスタ風', note: 'ランチの置き換えに' },
+      { name: '肉玉まぜそば', note: 'がっつり食べたい日に' },
+      { name: '塩焼きそば', note: '野菜も一緒に' },
+      { name: 'めんつゆだけ', note: '何もしたくない日に' }
+    ]
+  },
+
+  sova: {
+    id: 'sova',
+    name: 'PROTEIN MONSTER SOVA',
+    nameJa: 'プロテインモンスターソバ',
+    shortJa: 'プロテインモンスターソバ',
+    category: '干しそば',
+    kind: 'soba',
+    volume: '50g×10袋',
+    servingG: 50,
+    origin: '中国',
+    storage: '直射日光・高温多湿を避け、涼しい場所に保存',
+    ingredients: 'そば粉、小麦たん白、えんどう豆タンパク粉、小麦粉、えんどう豆食物繊維',
+    boilMin: '3〜5',        // 表示用
+    boilRange: [3, 5],     // 計算用。レシピの調理時間の換算に使う
+    cookedWeightG: 150,
+    nutrition: {
+      kcal: 177,
+      protein: 21,
+      fat: 2.1,
+      carb: 20.2,
+      sugar: 17,
+      fiber: 3.2,
+      salt: 1.2
+    },
+    angles: [
+      'タンパク質21g',
+      '食物繊維3.2g',
+      'そばとして食べられる',
+      'ゆであがり150g',
+      '和のアレンジ'
+    ],
+    recipes: [
+      { name: 'ぶっかけそば', note: 'めんつゆと薬味だけで' },
+      { name: 'とろろそば', note: 'つるっと食べたい日に' },
+      { name: '鶏南蛮そば', note: 'あたたかい一杯が欲しい日に' },
+      { name: 'サラダそば', note: '野菜をたっぷりのせて' },
+      { name: '焼きそば風', note: 'ソースで香ばしく' }
+    ]
+  }
+};
+
+// 比較データ（出典明記が必須のもの。景表法対策で必ず注記とセットで使う）
+const COMPARISONS = {
+  proteinDrink: { label: '飲むプロテイン', protein: 22.5, source: '当社調べ' },
+  saladChicken: { label: 'サラダチキン', protein: 24.0, source: '当社調べ' },
+  spaghetti: { label: 'スパゲッティ', sugarPer100g: 67.7, source: '日本食品標準成分表2021年版（八訂）' },
+  somen: { label: 'そうめん', sugarPer100g: 70.2, source: '日本食品標準成分表2021年版（八訂）' },
+  self: { label: '本品', sugarPer100g: 21.6 }
+};
+
+// 共通の訴求材料（両SKU共通）
+const COMMON = {
+  freeFrom: ['保存料', '酸化防止剤', '香料', '人工甘味料', '着色料'],
+  certifications: [
+    { code: 'FSSC22000', desc: '食品安全システム認証' },
+    { code: 'BRC', desc: '食品安全と品質を保証する国際規格' },
+    { code: 'FDA', desc: '米国食品医薬品局で適正と認められた施設' }
+  ],
+  endorsements: [
+    {
+      role: 'パーソナルジムトレーナー',
+      name: '小林 慎平',
+      quote:
+        'サプリや健康食品はトレーニング同様、継続が大切です。継続するためには、ストレスや手間なく摂る必要があり、シェイカーで飲むプロテインが苦手な方には、3分で茹でられる主食置き換えの麺は続けやすくて良いですね！'
+    },
+    {
+      role: '管理栄養士',
+      name: '山本 理江',
+      quote:
+        '日本人の食事は、ごはんなどの炭水化物に偏りやすく、タンパク質やビタミンを含む"おかず"が不足しがちです。主食の一部をこの麺に置きかえるだけで、手軽にタンパク質が摂れるのは、良いですね。'
+    }
+  ],
+  cautions: [
+    '本品製造工場では、そば・大豆を含む製品を生産しています。',
+    '豆類やピーナッツ等にアレルギーのある方はご注意ください。',
+    '開封後は封をして保存してください。',
+    '黒い点や白い部分がありますが、品質には問題ありません。'
+  ],
+  // 誤解を招かないための定型注記（キャプション末尾に自動付与）
+  disclaimers: {
+    nutrition: '※栄養成分値は1食あたりの分析値です。',
+    comparison:
+      '※糖質量の比較は100gあたり／日本食品標準成分表2021年版（八訂）より（スパゲッティ67.7g・そうめん70.2g／本品21.6g）',
+    proteinComparison: '※飲むプロテイン22.5g・サラダチキン24.0gとの比較は当社調べ',
+    general: '※本品は食品です。'
+  }
+};
+
+// 資料上の注意点（ダッシュボードのデータ画面に表示して運用者に確認を促す）
+const DATA_NOTES = [
+  'スペック文書の栄養成分表は見出しが「1食55gあたり」ですが、SOVA の内容量は50g×10袋です。SOVA の値は1食50gあたりとして生成しています。相違があればこのファイルの servingG を修正してください。',
+  '「31.7g配合」等の数値訴求は分析値の範囲で表示しています。ロットによる幅がある場合は注記の追加を検討してください。'
+];
+
+  return {
+    "PRODUCTS": PRODUCTS,
+    "COMPARISONS": COMPARISONS,
+    "COMMON": COMMON,
+    "DATA_NOTES": DATA_NOTES
+  };
+});
+__def("data/copy.js", function (__req) {
+// キャプション素材ライブラリ
+//
+// すべての文面は薬機法・景表法チェッカー（compliance.js）を通過する前提で書いている。
+// 追記する際は「効果・効能を語らない／事実と食シーンだけを語る」を守ること。
+// 数値は必ず products.js から差し込み、ここにベタ書きしない。
+
+/** 訴求軸。毎朝ローテーションする。 */
+const AXES = [
+  {
+    id: 'workout',
+    label: '筋トレ・ボディメイク',
+    desc: 'トレーニング後のタンパク質補給という食シーン',
+    skuBias: 'monster'
+  },
+  {
+    id: 'diet',
+    label: '置き換え・栄養設計',
+    desc: '主食置き換えという食べ方と、1食あたりの数値',
+    skuBias: null
+  },
+  {
+    id: 'time',
+    label: '時短・アレンジレシピ',
+    desc: '3〜5分でゆでるだけ、というつくりやすさ',
+    skuBias: null
+  },
+  {
+    id: 'trust',
+    label: '安心設計・原材料',
+    desc: '無添加設計と国際認証取得工場での製造',
+    skuBias: null
+  }
+];
+
+/* ------------------------------------------------------------------ *
+ * フック（1行目）。ここが伸びを決めるので、軸ごとに複数持つ。
+ * fn(p, n) : p = 商品オブジェクト, n = p.nutrition
+ * ------------------------------------------------------------------ */
+const HOOKS = {
+  workout: [
+    (p, n) => `シェイカー、洗うのが面倒になってきた人へ。`,
+    (p, n) => `トレ後のタンパク質、麺で摂るという選択。`,
+    (p, n) => `1食でたんぱく質${n.protein}g。ただし、麺です。`,
+    (p, n) => `プロテインを「飲む」から「食べる」に変えてみた。`,
+    (p, n) => `粉をシェイクする3分と、麺をゆでる${p.boilMin}分。`,
+    (p, n) => `ドロドロが苦手なまま、タンパク質を摂りたい。`
+  ],
+  diet: [
+    (p, n) => `いつもの主食を、この麺に置きかえた日の話。`,
+    (p, n) => `1食${n.kcal}kcal、たんぱく質${n.protein}g。麺です。`,
+    (p, n) => `主食を我慢しない、という選択肢。`,
+    (p, n) => `1食${n.kcal}kcalの麺で、昼をすませる日。`,
+    (p, n) => `糖質${n.sugar}g・たんぱく質${n.protein}g。これで1食分。`,
+    (p, n) => `食べた気がしない、が続かない理由だと思っています。`
+  ],
+  time: [
+    (p, n) => `お湯に入れて${p.boilMin}分。それだけ。`,
+    (p, n) => `今日はもう、何もしたくない日の一杯。`,
+    (p, n) => `${p.recipes[0].name}。鍋ひとつでできます。`,
+    (p, n) => `めんつゆだけでいい日がある。`,
+    (p, n) => `帰宅から${p.boilMin}分後の食卓。`,
+    (p, n) => `ゆでる、和える、終わり。`
+  ],
+  trust: [
+    (p, n) => `原材料表示、見てもらえますか。`,
+    (p, n) => `保存料・着色料・人工甘味料、入れていません。`,
+    (p, n) => `毎日食べるものだから、つくる場所にこだわりました。`,
+    (p, n) => `原材料は、${p.ingredients.split('、')[0]}から。`,
+    (p, n) => `シンプルな原材料で、麺をつくるということ。`
+  ]
+};
+
+/* ------------------------------------------------------------------ *
+ * ボディ。軸ごとに、事実だけで構成したブロックを返す。
+ * ------------------------------------------------------------------ */
+const BODIES = {
+  workout: (p, n, c) => [
+    `${p.nameJa}は、1食（${p.servingG}g）あたりたんぱく質${n.protein}gの${p.category}です。`,
+    `シェイカーもプロテインの粉もいりません。お鍋で${p.boilMin}分ゆでるだけ。`,
+    `ゆであがりは約${p.cookedWeightG}g。トレーニング後の食事に、主食としてそのまま組み込めます。`,
+    `脂質${n.fat}g、糖質${n.sugar}g、${n.kcal}kcal。数字は1食あたりの分析値です。`
+  ],
+  diet: (p, n, c) => [
+    `1食（${p.servingG}g）あたり ${n.kcal}kcal／たんぱく質${n.protein}g／脂質${n.fat}g／糖質${n.sugar}g／食物繊維${n.fiber}g。`,
+    `${p.nameJa}は${p.category}。主食のかわりに、そのまま1食として食べられます。`,
+    `ゆで時間は${p.boilMin}分、ゆであがりは約${p.cookedWeightG}g。食べごたえのある量です。`,
+    `我慢して量を減らすのではなく、食べるものを入れ替える。そういう考え方の麺です。`
+  ],
+  time: (p, n, c) => [
+    `つくり方は、沸かしたお湯で${p.boilMin}分ゆでるだけ。あとは好きな味付けで。`,
+    `${p.recipes.map((r) => `・${r.name}（${r.note}）`).join('\n')}`,
+    `どれも鍋ひとつ。1食（${p.servingG}g）あたりたんぱく質${n.protein}g、${n.kcal}kcalです。`
+  ],
+  trust: (p, n, c) => [
+    `原材料は「${p.ingredients}」。${c.freeFrom.join('・')}は使っていません。`,
+    `製造は${c.certifications.map((x) => x.code).join('・')}を取得した工場。日本人スタッフが品質を管理しています。`,
+    `1食（${p.servingG}g）あたりたんぱく質${n.protein}g／${n.kcal}kcal／糖質${n.sugar}g。`,
+    `毎日の主食にするものだからこそ、中身をそのままお見せします。`
+  ]
+};
+
+/* ------------------------------------------------------------------ *
+ * 締め。CTA。
+ * ------------------------------------------------------------------ */
+const CLOSINGS = [
+  `飲むより、食べる。\nプロテインモンスターの新しい習慣を、プロフィールのリンクから。`,
+  `気になる方は、プロフィールのリンクから商品ページへ。`,
+  `続けられるかどうかは、手間の少なさで決まると思っています。`,
+  `詳しいスペックはプロフィールのリンクからご覧ください。`,
+  `どのアレンジが気になりますか？コメントで教えてください。`
+];
+
+const CLOSINGS_X = [
+  `詳細はプロフィールのリンクから。`,
+  `スペックの詳細はプロフィールのリンクへ。`,
+  `気になった方はプロフィールのリンクをどうぞ。`
+];
+
+/* ------------------------------------------------------------------ *
+ * 注意喚起（アレルギー）。全投稿の末尾に必ず入れる。
+ * ------------------------------------------------------------------ */
+const ALLERGY_NOTE =
+  '※本品製造工場では、そば・大豆を含む製品を生産しています。豆類にアレルギーのある方はご注意ください。';
+
+/* ------------------------------------------------------------------ *
+ * ハッシュタグ。core は必ず入る。軸別・SKU別を足して規定数まで埋める。
+ * ------------------------------------------------------------------ */
+const HASHTAGS = {
+  core: ['#プロテインモンスター', '#PROTEINMONSTER', '#高タンパク麺', '#タンパク質'],
+  bySku: {
+    monster: ['#プロテインパスタ', '#えんどう豆プロテイン', '#ピープロテイン', '#高たんぱく'],
+    sova: ['#プロテインそば', '#そば', '#蕎麦', '#和食']
+  },
+  byAxis: {
+    workout: [
+      '#筋トレ飯', '#トレーニング後の食事', '#プロテイン', '#たんぱく質補給',
+      '#ジム飯', '#workout', '#筋トレ女子', '#筋トレ男子', '#ボディメイク'
+    ],
+    diet: [
+      '#低糖質', '#低糖質生活', '#置き換え', '#主食置き換え', '#カロリー計算',
+      '#PFCバランス', '#food', '#ヘルシー志向', '#低カロリー'
+    ],
+    time: [
+      '#時短レシピ', '#簡単レシピ', '#ズボラ飯', '#麺活', '#おうちごはん',
+      '#ランチ', '#レシピ', '#今日のごはん', '#料理好きな人と繋がりたい'
+    ],
+    trust: [
+      '#無添加', '#食の安全', '#原材料', '#植物性たんぱく質', '#プラントベース',
+      '#えんどう豆', '#スーパーフード', '#食品ロス削減', '#丁寧な暮らし'
+    ]
+  },
+  // X は3個までに絞る
+  xPreferred: ['#プロテインモンスター', '#高タンパク麺', '#筋トレ飯', '#低糖質', '#時短レシピ']
+};
+
+/* ------------------------------------------------------------------ *
+ * 画像に載せる文字（合成モード用）。
+ *
+ * 実際の @protein.monster_official の投稿デザインに合わせた3つの型。
+ *   template 'stat' … オレンジ帯の上に極太数字。数値訴求。
+ *   template 'hook' … 見出し2行。コピー訴求。
+ *   template 'band' … 上下の黒帯。パッケージ的な統一感。
+ *
+ * フィールド:
+ *   eyebrow … オレンジの角丸ラベル（前置き）
+ *   lead    … stat のとき、数字の上に置く小見出し
+ *   big     … 主役の文字（stat では数値、hook/band では見出し）
+ *   suffix  … stat のとき、数字の下に置く後置き
+ *   sub     … 小さい方の説明
+ *   chips   … 下部に並べるスペック
+ * ------------------------------------------------------------------ */
+
+/** スペックのチップ。数値は products.js から差し込む。 */
+const chips = (p, n) => [
+  { k: 'たんぱく質', v: `${n.protein}g` },
+  { k: '食物繊維', v: `${n.fiber}g` },
+  { k: '糖質', v: `${n.sugar}g` }
+];
+
+const OVERLAYS = {
+  workout: [
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '一味違うプロテイン麺',
+      lead: '一食に たんぱく質',
+      big: `${n.protein}g`,
+      suffix: 'の衝撃を。',
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: '一味違うプロテイン麺',
+      big: '飲むより、\n食べる。',
+      sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: `1食${p.servingG}gあたり`,
+      big: 'シェイカーは、\nもう洗わない。',
+      sub: `お鍋で${p.boilMin}分ゆでるだけ。${p.nameJa}`,
+      chips: chips(p, n)
+    })
+  ],
+
+  diet: [
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '主食置き換えという選択',
+      lead: '1食あたり',
+      big: `${n.kcal}`,
+      suffix: `kcal でこの満足感。`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: `1食${p.servingG}gあたり`,
+      big: '主食を、入れ替える。',
+      sub: `${n.kcal}kcal・たんぱく質${n.protein}g・糖質${n.sugar}g`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: '主食置き換えという選択',
+      big: '我慢ではなく、\n入れ替える。',
+      sub: `${p.nameJa}／1食${n.kcal}kcal`,
+      chips: chips(p, n)
+    })
+  ],
+
+  time: [
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: `ゆで時間${p.boilMin}分`,
+      big: 'お湯に入れて、\nそれだけ。',
+      sub: `${p.recipes[0].name}／${p.nameJa}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'hook',
+      eyebrow: `ゆで時間${p.boilMin}分`,
+      big: 'めんつゆだけで\nいい日がある。',
+      sub: `鍋ひとつ、${p.boilMin}分。${p.nameJa}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '鍋ひとつでできる',
+      big: `${p.recipes[0].name}`,
+      sub: `${p.recipes[0].note}／ゆで時間${p.boilMin}分`,
+      chips: chips(p, n)
+    })
+  ],
+
+  trust: [
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '原材料はシンプルに',
+      big: '保存料・着色料\n不使用。',
+      sub: `${p.nameJa}／${p.category}`,
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'band',
+      eyebrow: '国際認証取得工場で製造',
+      big: 'つくる場所から、\n見せます。',
+      sub: 'FSSC22000・BRC・FDA の基準を満たした工場',
+      chips: chips(p, n)
+    }),
+    (p, n) => ({
+      template: 'stat',
+      eyebrow: '一味違うプロテイン麺',
+      lead: '一食に たんぱく質',
+      big: `${n.protein}g`,
+      suffix: '国際認証取得工場で製造。',
+      chips: chips(p, n)
+    })
+  ]
+};
+
+/* ------------------------------------------------------------------ *
+ * X 用の短いボディ。Instagram の BODIES は長すぎるため専用に持つ。
+ * ------------------------------------------------------------------ */
+const BODIES_X = {
+  workout: (p, n) => [
+    `1食（${p.servingG}g）でたんぱく質${n.protein}g、${n.kcal}kcal。ゆで時間は${p.boilMin}分です。`,
+    `${p.nameJa}は${p.category}。シェイカー不要、ゆでるだけでたんぱく質${n.protein}g。`,
+    `たんぱく質${n.protein}g・脂質${n.fat}g・糖質${n.sugar}g。1食（${p.servingG}g）あたりの分析値です。`
+  ],
+  diet: (p, n) => [
+    `1食（${p.servingG}g）あたり${n.kcal}kcal／たんぱく質${n.protein}g／糖質${n.sugar}g。`,
+    `主食のかわりに1食として。ゆであがり約${p.cookedWeightG}g、${n.kcal}kcalです。`,
+    `${n.kcal}kcalでたんぱく質${n.protein}g。主食を入れ替えるという考え方の麺です。`
+  ],
+  time: (p, n) => [
+    `お湯で${p.boilMin}分ゆでて、好きな味付けで。それだけで1食たんぱく質${n.protein}g。`,
+    `おすすめは${p.recipes[0].name}（${p.recipes[0].note}）。鍋ひとつ、${p.boilMin}分。`,
+    `${p.recipes[1].name}も${p.recipes[2].name}も鍋ひとつ。ゆで時間は${p.boilMin}分です。`
+  ],
+  trust: (p, n) => [
+    `保存料・酸化防止剤・香料・人工甘味料・着色料は不使用。1食たんぱく質${n.protein}gです。`,
+    `製造はFSSC22000・BRC・FDAの基準を満たした工場。1食（${p.servingG}g）でたんぱく質${n.protein}g。`,
+    `原材料はシンプルに。${n.kcal}kcal、たんぱく質${n.protein}g、糖質${n.sugar}g（1食あたり）。`
+  ]
+};
+
+  return {
+    "AXES": AXES,
+    "HOOKS": HOOKS,
+    "BODIES": BODIES,
+    "CLOSINGS": CLOSINGS,
+    "CLOSINGS_X": CLOSINGS_X,
+    "ALLERGY_NOTE": ALLERGY_NOTE,
+    "HASHTAGS": HASHTAGS,
+    "OVERLAYS": OVERLAYS,
+    "BODIES_X": BODIES_X
+  };
+});
+__def("compliance.js", function (__req) {
+// 薬機法（医薬品医療機器等法）・景品表示法チェッカー
+//
+// 本品は「食品」であり、機能性表示食品・特定保健用食品の届出はない前提。
+// したがって、身体の構造・機能への影響や疾病の治療・予防を想起させる表現は使えない。
+// ここは生成側と手入力側の両方に効く最後の関門で、level:'block' が1件でも残ると
+// ダッシュボードの投稿ボタンは押せない。
+
+const LEVEL = { BLOCK: 'block', WARN: 'warn' };
+
+// --- 薬機法：食品で標榜できない効能効果 ---------------------------------
+const YAKKI_RULES = [
+  {
+    id: 'yakki-slim',
+    level: LEVEL.BLOCK,
+    law: '薬機法',
+    pattern: /痩せ|やせる|ヤセ|激やせ|脂肪燃焼|燃焼させ|脂肪が落ち|体脂肪が減|減量できる|ダイエット効果|痩身/,
+    reason: '食品で痩身・脂肪燃焼の効果を標榜すると医薬品的効能効果とみなされます。',
+    fix: '「主食置き換え」「1食あたり◯kcal」など、事実としての栄養設計・食シーンの表現に置き換えてください。'
+  },
+  {
+    id: 'yakki-muscle',
+    level: LEVEL.BLOCK,
+    law: '薬機法',
+    pattern: /筋肉がつく|筋肉が増え|筋肥大|バルクアップできる|筋力アップ|筋力が上が|マッチョになれ/,
+    reason: '身体の組織を増強する効果の標榜は医薬品的効能効果にあたります。',
+    fix: '「トレーニング後のタンパク質補給に」など、摂取シーンの表現にとどめてください。'
+  },
+  {
+    id: 'yakki-disease',
+    level: LEVEL.BLOCK,
+    law: '薬機法',
+    pattern: /治る|治療|改善する|予防でき|効果がある|効く|症状|病気|生活習慣病|糖尿|血糖値|血圧|コレステロール|中性脂肪|肝機能|貧血/,
+    reason: '疾病の治療・予防や身体機能への影響を示す表現は使えません。',
+    fix: 'その主張自体を削除してください。数値の事実（栄養成分値）に置き換えるのが安全です。'
+  },
+  {
+    id: 'yakki-function',
+    level: LEVEL.BLOCK,
+    law: '薬機法',
+    pattern: /免疫力|代謝が上が|代謝アップ|基礎代謝を|デトックス|老廃物|腸内環境を整え|整腸|便秘|疲労回復|疲れが取れ|むくみ|美肌|肌がきれい|アンチエイジング|若返り|老化を防/,
+    reason: '身体の機能に対する作用の標榜は、機能性表示等の届出がない食品では認められません。',
+    fix: '削除するか、原材料・成分の事実の記載にとどめてください。'
+  },
+  {
+    id: 'yakki-digest',
+    level: LEVEL.WARN,
+    law: '薬機法',
+    pattern: /胃腸に(?:優|やさ)しく|消化を助け|消化酵素が豊富|吸収を高め/,
+    reason: '消化・吸収など体内の働きへの作用を示す表現は、食品では避けるのが安全です。',
+    fix: '素材の一般的な説明にとどめるか、削除してください（例：「ネバネバ食材の長芋をプラス」）。'
+  },
+  {
+    id: 'yakki-health',
+    level: LEVEL.WARN,
+    law: '薬機法',
+    pattern: /健康になる|健康維持に|body\s*make|ボディメイクできる|体質が変わ/,
+    reason: '健康効果を約束する表現と受け取られる可能性があります。',
+    fix: '「健康的な食生活の一部として」等、断定を避けた表現に調整してください。'
+  },
+  {
+    id: 'yakki-testimonial',
+    level: LEVEL.WARN,
+    law: '薬機法',
+    pattern: /飲み続けたら|食べ続けたら|(\d+)\s*(kg|キロ)\s*(減|落ち|痩)|変化を実感|効果を実感/,
+    reason: '体験談の形をとっていても、効果効能の暗示は同様に規制対象です。',
+    fix: '結果を示す体験談は避け、味・食べやすさ・調理のしやすさの感想にとどめてください。'
+  }
+];
+
+// --- 景品表示法：優良誤認・有利誤認 -------------------------------------
+const KEIHYO_RULES = [
+  {
+    id: 'keihyo-no1',
+    level: LEVEL.BLOCK,
+    law: '景表法',
+    pattern: /No\.?\s*1|ナンバーワン|日本一|世界一|業界初|世界初|日本初|唯一の|最高の|最強|一番|トップクラス/i,
+    reason: 'No.1・最上級表現は、調査に基づく合理的根拠と出典の明示がなければ優良誤認となります。',
+    fix: '根拠と調査主体・時点を併記できないなら削除してください。'
+  },
+  {
+    id: 'keihyo-absolute',
+    level: LEVEL.BLOCK,
+    law: '景表法',
+    pattern: /必ず|絶対に|誰でも必ず|100[%％]|確実に|保証します|永久に/,
+    reason: '例外なく効果が得られるかのような断定は、合理的根拠を欠く表示になります。',
+    fix: '断定を外し、事実の記述に置き換えてください。'
+  },
+  {
+    id: 'keihyo-only',
+    level: LEVEL.WARN,
+    law: '景表法',
+    pattern: /食べるだけで|置き換えるだけで|これだけで|飲むだけで/,
+    reason: 'それだけで結果が出るかのような表現は、優良誤認につながります。',
+    fix: '「食事のバランスの中で」等、前提条件を添えてください。'
+  },
+  {
+    id: 'keihyo-price',
+    level: LEVEL.WARN,
+    law: '景表法',
+    pattern: /通常価格|定価|[0-9,]+円\s*→|\d+\s*[%％]\s*OFF|半額|最安/,
+    reason: '価格・割引の訴求は二重価格表示の規制対象です。比較対照価格の根拠と期間の明示が必要です。',
+    fix: '販売期間・比較対象価格の根拠を確認のうえ、必要な注記を追加してください。'
+  },
+  {
+    id: 'keihyo-comparison',
+    level: LEVEL.WARN,
+    law: '景表法',
+    pattern: /より多い|より少な|比べて|約半分|上回る|勝る/,
+    reason: '比較広告には、比較対象・調査主体・出典の明示が必要です。',
+    fix: '注記（※当社調べ／※日本食品標準成分表2021年版（八訂）より）が本文に含まれているか確認してください。'
+  },
+  {
+    id: 'keihyo-sugarfree',
+    level: LEVEL.BLOCK,
+    law: '景表法・食品表示基準',
+    pattern: /糖質ゼロ|糖質0|無糖|カロリーゼロ|ノンカロリー|糖質オフ(?!.*比)/,
+    reason: '強調表示には食品表示基準の基準値と、比較対象の明示が必要です。本品の値では該当しません。',
+    fix: '「糖質11.9g（1食あたり）」のように実数値で表現してください。'
+  }
+];
+
+// --- プラットフォーム要件 -----------------------------------------------
+const PLATFORM_RULES = [
+  {
+    id: 'pr-disclosure',
+    level: LEVEL.WARN,
+    law: 'ステマ規制',
+    pattern: /^(?![\s\S]*(#PR|#pr|＃PR|#プロモーション|#広告))[\s\S]*$/,
+    reason:
+      '事業者アカウントからの自社商品投稿は通常ステマ規制の対象外ですが、第三者の投稿の再掲・タイアップの場合は「#PR」等の明示が必要です。',
+    fix: 'タイアップ投稿なら #PR を追加してください。自社アカウントの通常投稿であればこの警告は無視して構いません。',
+    optional: true // 既定では無効。設定でオンにできる。
+  }
+];
+
+const ALL_RULES = [...YAKKI_RULES, ...KEIHYO_RULES, ...PLATFORM_RULES];
+
+/**
+ * キャプション全文（ハッシュタグ含む）を検査する。
+ * @param {string} text
+ * @param {{includeOptional?: boolean}} opts
+ * @returns {{ok: boolean, blocks: Array, warns: Array, findings: Array}}
+ */
+function checkCompliance(text, opts = {}) {
+  const findings = [];
+  const src = String(text || '');
+
+  for (const rule of ALL_RULES) {
+    if (rule.optional && !opts.includeOptional) continue;
+    const re = new RegExp(rule.pattern.source, rule.pattern.flags.includes('g') ? rule.pattern.flags : rule.pattern.flags + 'g');
+    let m;
+    const seen = new Set();
+    while ((m = re.exec(src)) !== null) {
+      if (m[0] === '') { re.lastIndex++; continue; }
+      if (seen.has(m[0])) continue;
+      seen.add(m[0]);
+      findings.push({
+        ruleId: rule.id,
+        level: rule.level,
+        law: rule.law,
+        matched: m[0],
+        index: m.index,
+        reason: rule.reason,
+        fix: rule.fix
+      });
+    }
+  }
+
+  // 比較表現があるのに出典注記がない場合は BLOCK に格上げする
+  const hasComparison = findings.some((f) => f.ruleId === 'keihyo-comparison');
+  const hasSource = /※.*(当社調べ|日本食品標準成分表)/.test(src);
+  if (hasComparison && !hasSource) {
+    for (const f of findings) {
+      if (f.ruleId === 'keihyo-comparison') {
+        f.level = LEVEL.BLOCK;
+        f.reason = '比較表現がありますが、出典・調査主体の注記が本文に見当たりません。';
+      }
+    }
+  }
+
+  const blocks = findings.filter((f) => f.level === LEVEL.BLOCK);
+  const warns = findings.filter((f) => f.level === LEVEL.WARN);
+  return { ok: blocks.length === 0, blocks, warns, findings };
+}
+
+/** 画像に載せる短文（合成テキスト）用。文字数が短いぶん厳しめに見る。 */
+function checkImageText(text) {
+  return checkCompliance(text, { includeOptional: false });
+}
+
+  return {
+    "LEVEL": LEVEL,
+    "ALL_RULES": ALL_RULES,
+    "checkCompliance": checkCompliance,
+    "checkImageText": checkImageText
+  };
+});
+__def("engine.js", function (__req) {
+// 投稿案の生成エンジン
+//
+// ブラウザ（ダッシュボード）と Node（毎朝のメール通知）の両方から読み込む。
+// 日付をシードにした決定的な乱数を使うので、同じ日付なら誰がどこで実行しても
+// まったく同じ提案になる。メール本文とダッシュボードの表示が食い違わないのはこのため。
+
+const { PRODUCTS, COMMON } = __req("data/products.js");
+const { AXES, HOOKS, BODIES, BODIES_X, CLOSINGS, CLOSINGS_X, ALLERGY_NOTE, HASHTAGS, OVERLAYS } = __req("data/copy.js");
+const { checkCompliance } = __req("compliance.js");
+
+/* -------------------------- 決定的乱数 -------------------------- */
+
+function hashString(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/** mulberry32 */
+function makeRng(seedStr) {
+  let a = hashString(seedStr);
+  return function rng() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+
+function pickMany(rng, arr, count) {
+  const pool = [...arr];
+  const out = [];
+  while (out.length < count && pool.length) {
+    out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  }
+  return out;
+}
+
+/* -------------------------- 日付ユーティリティ -------------------------- */
+
+/** JST の YYYY-MM-DD。ローテーションはこれを基準にする。 */
+function jstDateKey(d = new Date()) {
+  const jst = new Date(d.getTime() + 9 * 3600 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+
+function dayIndex(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
+/* -------------------------- ハッシュタグ -------------------------- */
+
+function buildHashtags(rng, { sku, axis, platform }) {
+  if (platform === 'x') {
+    // X は本文が主役。タグは2〜3個に絞る。
+    const base = ['#プロテインモンスター'];
+    const extra = pickMany(rng, HASHTAGS.byAxis[axis], 2);
+    return [...base, ...extra];
+  }
+  // Instagram は 20 個前後。core → SKU → 軸 の順で埋める。
+  const tags = [...HASHTAGS.core, ...HASHTAGS.bySku[sku]];
+  const axisTags = pickMany(rng, HASHTAGS.byAxis[axis], HASHTAGS.byAxis[axis].length);
+  const otherAxes = AXES.filter((a) => a.id !== axis);
+  const spice = pickMany(rng, otherAxes.flatMap((a) => HASHTAGS.byAxis[a.id]), 4);
+  const merged = [];
+  for (const t of [...tags, ...axisTags, ...spice]) {
+    if (!merged.includes(t)) merged.push(t);
+    if (merged.length >= 20) break;
+  }
+  return merged;
+}
+
+/* -------------------------- キャプション -------------------------- */
+
+function buildCaption(rng, { product, axis, platform }) {
+  const p = product;
+  const n = p.nutrition;
+  const hook = pick(rng, HOOKS[axis])(p, n);
+  const bodyBlocks = BODIES[axis](p, n, COMMON);
+
+  if (platform === 'x') {
+    // 日本語主体の投稿として 140 字前後に収める。本文は専用の1行版を使う。
+    const closing = pick(rng, CLOSINGS_X);
+    const body = pick(rng, BODIES_X[axis](p, n));
+    return [hook, '', body, '', closing].join('\n');
+  }
+
+  const closing = pick(rng, CLOSINGS);
+  const parts = [hook, '', bodyBlocks.join('\n\n'), '', closing, '', ALLERGY_NOTE, COMMON.disclaimers.nutrition];
+  return parts.join('\n');
+}
+
+/* -------------------------- 画像プラン -------------------------- */
+
+/**
+ * 画像の使い方を決める。
+ * mode 'composite' = 写真にコピーを合成 / 'raw' = 写真そのまま
+ * 実際にどのファイルを使うかは、ダッシュボード側が画像ライブラリのタグと
+ * このプランの好みタグを突き合わせて決める（library.js の pickImage）。
+ */
+function buildImagePlan(rng, { product, axis, platform }) {
+  const mode = rng() < 0.5 ? 'composite' : 'raw';
+  // 文字は「そのまま」の案でも用意しておく。ダッシュボードで「文字を載せる」に
+  // 切り替えたときに、載せる文字が無いと何も起きないため。
+  const overlay = pick(rng, OVERLAYS[axis])(product, product.nutrition);
+
+  // 軸ごとに相性のよい被写体
+  const preferScene = {
+    workout: ['cooked', 'raw', 'package'],
+    diet: ['cooked', 'lifestyle', 'package'],
+    time: ['cooking', 'cooked', 'lifestyle'],
+    trust: ['raw', 'package', 'ingredient']
+  }[axis];
+
+  return {
+    mode,
+    overlay,
+    // 書き出し比率はダッシュボードの設定で決める（投稿ごとに個別変更も可）。
+    preferScene,
+    preferSku: product.id,
+    // 合成する場合、文字を置く側に余白のある写真を優先する
+    preferSpace: overlay.template === 'stat' ? 'space-bottom' : 'space-top'
+  };
+}
+
+/* -------------------------- 1件の投稿案 -------------------------- */
+
+/**
+ * @param {boolean} sync true なら媒体をシードに含めない。
+ *   こうすると Instagram と X で 訴求軸・SKU・フック・画像の文字が一致し、
+ *   「同じ投稿の媒体別バージョン」になる。false なら媒体ごとに独立して振る。
+ * @param {string|null} forceSku 'monster' | 'sova' を渡すと SKU を固定する。
+ *   乱数は通常どおり引いたうえで結果だけ差し替えるので、訴求軸・テンプレート・
+ *   画像プランは変わらず、商品だけが入れ替わった同じ投稿になる。
+ */
+function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, forceSku = null) {
+  const seed = sync
+    ? `${dateKey}|${variant}|${salt}`
+    : `${dateKey}|${platform}|${variant}|${salt}`;
+  const rng = makeRng(seed);
+
+  // 軸は日ごとにローテーション。variant を足して、別案は別の軸になるようにする。
+  const axis = AXES[(dayIndex(dateKey) + variant) % AXES.length].id;
+  const axisDef = AXES.find((a) => a.id === axis);
+
+  // SKU は軸の相性を7割、残り3割はランダム。どちらか一方に特化させる。
+  let skuId;
+  if (axisDef.skuBias && rng() < 0.7) skuId = axisDef.skuBias;
+  else skuId = rng() < 0.5 ? 'monster' : 'sova';
+  // 指定があれば上書きする。乱数を引いたあとに差し替えるのは、
+  // 以降の生成（画像プラン・コピー）の並びを指定の有無で変えないため。
+  if (forceSku && PRODUCTS[forceSku]) skuId = forceSku;
+  const product = PRODUCTS[skuId];
+
+  // 画像プランを先に決めるのは、乱数の消費順を媒体間でそろえるため。
+  // キャプションは媒体で長さが違い、引く回数も変わるので、後ろに置く。
+  const image = buildImagePlan(rng, { product, axis, platform });
+  const caption = buildCaption(rng, { product, axis, platform });
+  const hashtags = buildHashtags(rng, { sku: skuId, axis, platform });
+
+  const fullText = platform === 'ig'
+    ? `${caption}\n\n${hashtags.join(' ')}`
+    : `${caption}\n\n${hashtags.join(' ')}`;
+
+  return {
+    id: `${dateKey}-${platform}-${variant}`,
+    dateKey,
+    platform,          // 'ig' | 'x'
+    variant,
+    axis,
+    axisLabel: axisDef.label,
+    sku: skuId,
+    skuLabel: product.nameJa,
+    caption,
+    hashtags,
+    fullText,
+    charCount: [...fullText].length,
+    image,
+    compliance: checkCompliance(fullText)
+  };
+}
+
+/**
+ * その日の提案一式。
+ * Instagram 1本 + X 1本を既定とし、それぞれ別案を variant で出せる。
+ */
+function generateDailyPlan(dateKey = jstDateKey(), variants = { ig: 0, x: 0 }, opts = {}) {
+  const sync = opts.sync !== false; // 既定は「そろえる」
+  const force = opts.forceSku || {}; // { ig: 'monster'|'sova', x: ... }
+  const ig = buildProposal(dateKey, 'ig', variants.ig || 0, 0, sync, force.ig || null);
+  let x = buildProposal(dateKey, 'x', variants.x || 0, 0, sync, force.x || null);
+
+  // 独立生成のときだけ、2本が同じ書き出しになるのを避ける。
+  // そろえる設定では一致しているのが正しい状態なので何もしない。
+  if (!sync) {
+    const firstLine = (p) => p.caption.split('\n')[0];
+    for (let salt = 1; salt <= 8 && firstLine(x) === firstLine(ig); salt++) {
+      x = buildProposal(dateKey, 'x', variants.x || 0, salt, false, force.x || null);
+    }
+  }
+
+  return { dateKey, sync, generatedAt: new Date().toISOString(), posts: [ig, x] };
+}
+
+
+  return {
+    "buildProposal": buildProposal,
+    "AXES": AXES,
+    "PRODUCTS": PRODUCTS,
+    "makeRng": makeRng,
+    "jstDateKey": jstDateKey,
+    "buildHashtags": buildHashtags,
+    "generateDailyPlan": generateDailyPlan
+  };
+});
+__def("data/images.js", function (__req) {
+// Google Drive 素材フォルダのカタログ
+// https://drive.google.com/drive/folders/1uXFEWTMOK9SUzummPzaUfwp61pcEpenl
+//
+// 画像の実体はブラウザの画像ライブラリ（IndexedDB）に保存する。
+// Drive から直接読み込まないのは、canvas 合成時に CORS でタイント（書き出し不可）になるため。
+// 初回のみダッシュボードの「画像ライブラリ」にフォルダごとドラッグ＆ドロップすれば、
+// ファイル名でこのカタログと自動照合され、以後は端末に保持される。
+
+const DRIVE_FOLDER_URL =
+  'https://drive.google.com/drive/folders/1uXFEWTMOK9SUzummPzaUfwp61pcEpenl';
+
+// タグの語彙。画像ライブラリ画面でクリック付与する。
+// 生成エンジンは scene / sku タグを見て投稿テーマに合う画像を選ぶ。
+const TAG_VOCAB = {
+  scene: [
+    { id: 'cooked', label: '調理後（盛り付け）' },
+    { id: 'raw', label: '乾麺・麺そのもの' },
+    { id: 'package', label: 'パッケージ・箱' },
+    { id: 'logo', label: 'ロゴ' },
+    { id: 'lifestyle', label: '食卓・ライフスタイル' },
+    { id: 'ingredient', label: '原材料・素材' },
+    { id: 'cooking', label: '調理中（鍋・湯気）' },
+    { id: 'person', label: '人物あり' }
+  ],
+  sku: [
+    { id: 'monster', label: 'プロテインモンスター' },
+    { id: 'sova', label: 'ソバ' },
+    { id: 'both', label: '両方／共通' }
+  ],
+  // 合成テンプレの相性。文字を載せる余白がどこにあるか。
+  space: [
+    { id: 'space-top', label: '上に余白' },
+    { id: 'space-bottom', label: '下に余白' },
+    { id: 'space-none', label: '余白なし（文字なし向き）' }
+  ]
+};
+
+// Drive 上のファイル一覧（2026-03-30 時点）。
+// tags は初期状態では空。ダッシュボードでタグ付けすると localStorage に保存される。
+const IMAGE_CATALOG = [
+  { file: '20251111prime_d_042.jpg', driveId: '1d-o6-rtpjpGiyOLaGVajPQHdXEcmEZvp', shoot: '2025-11-11' },
+  { file: '20251111prime_d_049.jpg', driveId: '1d8E0KllBGu09pTnjRWZb8RsTUqM9n5bF', shoot: '2025-11-11' },
+  { file: '20251111prime_d_058.jpg', driveId: '1ckg8DSZviOxNmjVT9hDIvezt-H38FbFY', shoot: '2025-11-11' },
+  { file: '20251111prime_d_063.jpg', driveId: '1sjq2Eag0toq5uDVh9TqXvAItFa6w25Ff', shoot: '2025-11-11' },
+  { file: '20251111prime_d_064.jpg', driveId: '1TbhVyRKmoVHlXdKMiTk85q43P443l-Xt', shoot: '2025-11-11' },
+  { file: '20251111prime_d_065.jpg', driveId: '1f4wBsl_W-igNwMCIH2M4TKRETceAHgxD', shoot: '2025-11-11' },
+  { file: '20251111prime_d_068.jpg', driveId: '1L6JVfqiIhC_2ucC7th0CU-aQaXbU5_zz', shoot: '2025-11-11' },
+  { file: '20251111prime_d_078.jpg', driveId: '13b4Q4ie1kMaZlf1Pz4T62pZZ37Qj9Qzt', shoot: '2025-11-11' },
+  { file: '20251111prime_d_086.jpg', driveId: '1N8Bed0jdfGAsAGP6mtJnDNHwWYrckutj', shoot: '2025-11-11' },
+  { file: '20251111prime_d_123.jpg', driveId: '1sN_Ok82-bCrsLknC2Lbwbt1jONcbVWNL', shoot: '2025-11-11' },
+  { file: '20251111prime_d_130.jpg', driveId: '1iPf_Sh254ptlzyqbh6gP8xLlzSKql7Yv', shoot: '2025-11-11' },
+  { file: '20251111prime_d_137.jpg', driveId: '1bg_4NafZ3gg2i6I9rWY3klrDGcl17PQH', shoot: '2025-11-11' },
+  { file: '20251111prime_d_152.jpg', driveId: '1VsaUGRH6TNrqOC8tmztmMC-CvT5V3Vvw', shoot: '2025-11-11' },
+  { file: '20251111prime_d_172.jpg', driveId: '1cES5zRPJoqpoZxFc8K_tOgHF13zMdcmA', shoot: '2025-11-11' },
+  { file: '20251111prime_d_231.jpg', driveId: '1ETPEiH2dOTOE_DJEjMUU9DOMp80UeHGn', shoot: '2025-11-11' },
+  { file: '20251111prime_d_233.jpg', driveId: '1T2W_oC8iGiPzKbnGYXG4lIzgDkjuN60j', shoot: '2025-11-11' },
+  { file: '20251111prime_d_235.jpg', driveId: '1iFCvddpYE_iYVsqCPFKPIPLvBIRwtFKA', shoot: '2025-11-11' },
+  { file: '20251111prime_d_239.jpg', driveId: '1u0j_iiOemndoUYMY3r060F_pAo2scSs8', shoot: '2025-11-11' },
+  { file: '20251111prime_d_271.jpg', driveId: '1VtDW51UJlC-prH2AxDZxhCf-b28G5WfF', shoot: '2025-11-11' },
+  { file: '20251111prime_d_319.jpg', driveId: '1niNHGcwxZ0wv206WEe7X8QcOa1I3w41M', shoot: '2025-11-12' },
+  { file: '20251111prime_d_327.jpg', driveId: '1E-BaVhk41L5D9HRppKVI96s0YwQKixG4', shoot: '2025-11-12' },
+  { file: '20251111prime_d_335.jpg', driveId: '1B2_Eh7ZsW_kydh2VA_LHGETG03KSC-J1', shoot: '2025-11-12' },
+  { file: '20251111prime_d_339.jpg', driveId: '1yF6CPiDPOU33yS0Ny6XWEeyMWJqfsI89', shoot: '2025-11-12' },
+  { file: '●prime_d_0539.jpg', driveId: '1Neb8DUnb0OTnQy55nLJi8lDoK17E-Z8B', shoot: '2025-12-04' },
+  { file: '●prime_d_0544.jpg', driveId: '1Y0PazuYH3p80j0NAQgWWZl2NibHDsXFI', shoot: '2025-12-04' },
+  { file: '●prime_d_0546.jpg', driveId: '1iGeX-buLNVgfbTgfmZnlRSE4SPh0B9y3', shoot: '2025-12-04' },
+  { file: '●prime_d_0554.jpg', driveId: '1Ya7V-29eTcIXYf2ZQuHQLeQ7x2DzDaFg', shoot: '2025-12-04' },
+  { file: '●prime_d_0559.jpg', driveId: '19xuUsUPzdWrOZlTTY7vUh3iUhicz7S-R', shoot: '2025-12-04' },
+  { file: '●prime_d_0562.jpg', driveId: '1O26RBLaclQfWQIpsbu5_8E7jhfvYpVkh', shoot: '2025-12-04' },
+  { file: '●prime_d_0963.jpg', driveId: '1dzhSSmAPY7UmWxEPvN3otLYf0xbmXQ6m', shoot: '2025-12-04' },
+  { file: '●prime_d_1025.jpg', driveId: '1kj3pcqacj2YWoRGbp-hEnMezW3mV2BM7', shoot: '2025-12-04' },
+  { file: '●prime_d_1062.jpg', driveId: '1VbrNAmsmWnqEYv3HiWKxmHgDUMzcc-Cx', shoot: '2025-12-04' },
+  { file: '_DSC4998.JPG', driveId: '14QohfZZQ5DotfqdIQ9eTIqiy8Uydxg8Q', shoot: 'その他' },
+  { file: '_DSC5006.JPG', driveId: '12ENjPYIm6yZ4Ea8yl3ADnIRiktXyQTVK', shoot: 'その他' }
+].map((r) => ({
+  ...r,
+  id: r.driveId,
+  viewUrl: `https://drive.google.com/file/d/${r.driveId}/view`,
+  // 参照用サムネイル。Drive の共有設定によっては表示されないため onerror でフォールバックする。
+  thumbUrl: `https://drive.google.com/thumbnail?id=${r.driveId}&sz=w400`
+}));
+
+  return {
+    "DRIVE_FOLDER_URL": DRIVE_FOLDER_URL,
+    "TAG_VOCAB": TAG_VOCAB,
+    "IMAGE_CATALOG": IMAGE_CATALOG
+  };
+});
+__def("backend.js", function (__req) {
+// 保存先の切り替え
+//
+// このダッシュボードは2つの置き方をする。
+//
+//   端末モード … GitHub Pages などで開いたとき。データはそのブラウザの中だけ。
+//   共有モード … Google Apps Script のウェブアプリとして開いたとき。
+//                データは会社の Google ドライブ／スプレッドシートに置かれ、
+//                ログインしたメンバー全員が同じものを見る。
+//
+// 判定は「google.script.run があるかどうか」だけ。Apps Script が配信した
+// ページの中でしか存在しないので、これで確実に分かれる。
+//
+// 保存の考え方：画面の操作は同期のまま（localStorage を手元の控えとして使い続ける）、
+// サーバーへの書き込みだけを裏でまとめて送る。こうすると操作の手応えが変わらない。
+// 同じ書類を2人が同時に直した場合は、あとに保存したほうが残る（後勝ち）。
+
+const isShared =
+  typeof google !== 'undefined' && google.script && typeof google.script.run === 'object';
+
+/** google.script.run を Promise で扱う */
+function call(fn, ...args) {
+  return new Promise((resolve, reject) => {
+    if (!isShared) return reject(new Error('共有モードではありません'));
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args);
+  });
+}
+
+let me = null;
+/** ログイン中のメンバー。共有モードでないときは null。 */
+function currentUser() {
+  return me;
+}
+
+/* --------------------------- 書類（タグ・編集・ログなど） --------------------------- */
+
+const docs = new Map(); // name → 値（オブジェクト）
+
+/** 起動時に一式読み込む。共有モードでないときは何もしない。 */
+async function init() {
+  if (!isShared) return { shared: false };
+  const boot = await call('apiBootstrap');
+  me = boot.user;
+  for (const [name, value] of Object.entries(boot.docs || {})) docs.set(name, value);
+  return { shared: true, user: me, names: [...docs.keys()] };
+}
+
+/** 共有側に保存されている値。無ければ undefined。 */
+function getDoc(name) {
+  return docs.get(name);
+}
+
+// 書き込みは 800ms まとめてから送る。文字を打つたびに往復させない。
+const pending = new Map();
+let flushTimer = null;
+let inFlight = 0;
+const listeners = new Set();
+
+/** 保存状況が変わったら呼ばれる（'saving' | 'saved' | 'error'） */
+function onStatus(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+function emit(state, detail) {
+  for (const fn of listeners) {
+    try { fn(state, detail); } catch { /* 通知先の失敗で保存を止めない */ }
+  }
+}
+
+function putDoc(name, value) {
+  if (!isShared) return;
+  docs.set(name, value);
+  pending.set(name, value);
+  emit('saving');
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flush, 800);
+}
+
+async function flush() {
+  if (!pending.size) return;
+  const batch = [...pending.entries()].map(([name, value]) => ({ name, json: JSON.stringify(value) }));
+  pending.clear();
+  inFlight++;
+  try {
+    await call('apiPutDocs', batch);
+    if (--inFlight === 0 && !pending.size) emit('saved');
+  } catch (err) {
+    inFlight--;
+    console.error('共有データの保存に失敗しました:', err);
+    // 取りこぼさないよう積み直す。次の保存でまとめて送られる。
+    for (const { name } of batch) if (!pending.has(name)) pending.set(name, docs.get(name));
+    emit('error', err);
+  }
+}
+
+/** 画面を閉じる前に、書き残しを送り切る */
+function flushNow() {
+  clearTimeout(flushTimer);
+  return flush();
+}
+
+/** 他の人の更新を取り込む */
+async function pull() {
+  if (!isShared) return false;
+  const boot = await call('apiBootstrap');
+  me = boot.user;
+  docs.clear();
+  for (const [name, value] of Object.entries(boot.docs || {})) docs.set(name, value);
+  return true;
+}
+
+/* --------------------------- 画像 --------------------------- */
+
+function listImages() {
+  return call('apiListImages');
+}
+
+async function fetchImage(id) {
+  const res = await call('apiGetImage', id);
+  const bin = atob(res.base64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Blob([buf], { type: res.type || 'image/jpeg' });
+}
+
+/** Blob を base64 にして送る。Apps Script は文字列しか受け取れない。 */
+async function uploadImage(name, blob) {
+  const base64 = await blobToBase64(blob);
+  return call('apiPutImage', name, blob.type || 'image/jpeg', base64);
+}
+
+function deleteImage(id) {
+  return call('apiDeleteImage', id);
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsDataURL(blob);
+  });
+}
+
+  return {
+    "isShared": isShared,
+    "currentUser": currentUser,
+    "init": init,
+    "getDoc": getDoc,
+    "onStatus": onStatus,
+    "putDoc": putDoc,
+    "flushNow": flushNow,
+    "pull": pull,
+    "listImages": listImages,
+    "fetchImage": fetchImage,
+    "uploadImage": uploadImage,
+    "deleteImage": deleteImage,
+    "blobToBase64": blobToBase64
+  };
+});
+__def("library.js", function (__req) {
+// 画像ライブラリ（ブラウザ内ストック）
+//
+// 画像の実体は IndexedDB に Blob のまま保存する。localStorage では容量が足りない。
+// Drive から直接読まないのは、canvas に描いた瞬間タイントして書き出せなくなるため。
+// 一度ドラッグ＆ドロップすれば、以後はブラウザを閉じても残る。
+
+const { IMAGE_CATALOG, TAG_VOCAB } = __req("data/images.js");
+const backend = __req("backend.js");
+
+const DB_NAME = 'pm-sns';
+const DB_VERSION = 1;
+const STORE = 'images';
+const TAGS_KEY = 'pm-sns:tags';
+
+let dbPromise = null;
+
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+
+function tx(mode, fn) {
+  return openDB().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const t = db.transaction(STORE, mode);
+        const store = t.objectStore(STORE);
+        const out = fn(store);
+        t.oncomplete = () => resolve(out && out.result !== undefined ? out.result : out);
+        t.onerror = () => reject(t.error);
+      })
+  );
+}
+
+/** ファイル名を正規化してカタログと照合する（全角記号や拡張子の大小差を吸収） */
+function normalizeName(name) {
+  return String(name)
+    .replace(/^.*[\\/]/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[●○・\s]/g, '');
+}
+
+const CATALOG_BY_NORM = new Map(IMAGE_CATALOG.map((c) => [normalizeName(c.file), c]));
+
+/** 画像として扱えるファイルだけに絞る */
+function imageFilesOnly(fileList) {
+  return [...fileList].filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
+}
+
+/** ライブラリに登録されるときのキー（カタログに一致すればカタログ側の名前） */
+function keyFor(file) {
+  const cat = CATALOG_BY_NORM.get(normalizeName(file.name));
+  return cat ? cat.file : file.name;
+}
+
+/**
+ * 取り込む前に、既にあるものと名前がぶつかるファイルを洗い出す。
+ * 黙って上書きすると元の画像が失われるので、必ずこれを先に通す。
+ * @returns {{duplicates: Array<{file: File, key: string, existing: object}>, fresh: File[], skipped: number}}
+ */
+async function inspectFiles(fileList) {
+  const files = imageFilesOnly(fileList);
+  const stored = await listStored();
+  const byKey = new Map(stored.map((s) => [s.key, s]));
+
+  const duplicates = [];
+  const fresh = [];
+  const seenInBatch = new Set();
+  for (const file of files) {
+    const key = keyFor(file);
+    const existing = byKey.get(key);
+    // 同じ選択の中に同名が2つある場合も重複として扱う
+    if (existing || seenInBatch.has(key)) {
+      duplicates.push({ file, key, existing: existing || null });
+    } else {
+      fresh.push(file);
+    }
+    seenInBatch.add(key);
+  }
+  return { duplicates, fresh, skipped: fileList.length - files.length };
+}
+
+/**
+ * File[] を取り込む。カタログ外のファイルも受け入れる（追加素材として登録）。
+ * @param {FileList|File[]} fileList
+ * @param {{overwrite?: boolean}} opts overwrite が false のときは同名を飛ばす
+ */
+async function importFiles(fileList, opts = {}) {
+  const overwrite = opts.overwrite !== false;
+  const result = { added: 0, matched: 0, skipped: 0, overwritten: 0, skippedDup: [], extras: [] };
+  const files = imageFilesOnly(fileList);
+  result.skipped = fileList.length - files.length;
+
+  const stored = await listStored();
+  const existingKeys = new Set(stored.map((s) => s.key));
+
+  for (const file of files) {
+    const norm = normalizeName(file.name);
+    const cat = CATALOG_BY_NORM.get(norm);
+    const key = cat ? cat.file : file.name;
+
+    if (existingKeys.has(key)) {
+      if (!overwrite) {
+        result.skippedDup.push(key);
+        continue;
+      }
+      result.overwritten++;
+    }
+
+    const blob = file.slice(0, file.size, file.type || 'image/jpeg');
+    if (backend.isShared) {
+      await backend.uploadImage(key, blob);
+    } else {
+      await tx('readwrite', (store) =>
+        store.put({
+          key,
+          norm,
+          name: file.name,
+          driveId: cat ? cat.driveId : null,
+          size: file.size,
+          type: file.type || 'image/jpeg',
+          importedAt: Date.now(),
+          blob
+        })
+      );
+    }
+    existingKeys.add(key);
+    result.added++;
+    if (cat) result.matched++;
+    else result.extras.push(file.name);
+  }
+  return result;
+}
+
+// 共有モードの一覧は Drive から取る。実体（Blob）は使うときに取りに行き、
+// 一度取ったら IndexedDB に控える（毎回ダウンロードすると重いため）。
+let remoteIndex = new Map(); // key → Drive のファイル情報
+
+async function listLocal() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readonly');
+    const req = t.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function listStored() {
+  if (backend.isShared) {
+    const files = await backend.listImages();
+    remoteIndex = new Map(files.map((f) => [f.key, f]));
+    // ロゴは素材写真ではないので、一覧・自動選択の対象から外す
+    return files.filter((f) => !RESERVED.has(f.key));
+  }
+  // 控え（__cache__…）は素材ではないので混ぜない
+  return (await listLocal()).filter((r) => !RESERVED.has(r.key) && !r.key.startsWith('__cache__'));
+}
+
+/**
+ * 画像の実体を返す。共有モードでは初回だけ Drive から取り、以後は端末の控えを使う。
+ * 控えのキーに更新時刻を含めるので、誰かが差し替えれば自動で取り直される。
+ */
+async function blobOf(item) {
+  if (!item) return null;
+  if (item.blob) return item.blob;
+  if (!backend.isShared || !item.id) return null;
+
+  const cacheKey = `__cache__${item.id}__${item.modified || ''}`;
+  const cached = await getRaw(cacheKey);
+  if (cached && cached.blob) return cached.blob;
+
+  const blob = await backend.fetchImage(item.id);
+  try {
+    await tx('readwrite', (store) => store.put({ key: cacheKey, blob, cachedAt: Date.now() }));
+  } catch {
+    /* 控えを作れなくても表示はできる */
+  }
+  return blob;
+}
+
+/* --------------------------- ブランドロゴ --------------------------- */
+//
+// ロゴは描き起こさず、支給されたファイルをそのまま使う。
+// 写真の上に置く白抜き用と、明るい背景に置く濃い色用の2枚を持てる。
+// 1枚しか登録がなければ、その1枚を両方に使う。
+
+const LOGO_SLOTS = {
+  onPhoto: '写真・暗い背景に置くロゴ（白抜き）',
+  onLight: '明るい背景に置くロゴ（濃い色）'
+};
+
+const LOGO_KEYS = { onPhoto: '__logo_on_photo__', onLight: '__logo_on_light__' };
+const RESERVED = new Set(Object.values(LOGO_KEYS));
+
+async function saveLogo(slot, file) {
+  const key = LOGO_KEYS[slot];
+  if (!key) throw new Error(`不明なロゴ枠: ${slot}`);
+  const blob = file.slice(0, file.size, file.type || 'image/png');
+  if (backend.isShared) {
+    await backend.uploadImage(key, blob);
+    remoteIndex.clear(); // 次の一覧取得で読み直す
+    return;
+  }
+  await tx('readwrite', (store) =>
+    store.put({ key, name: file.name, type: file.type || 'image/png', size: file.size, importedAt: Date.now(), blob })
+  );
+}
+
+async function getLogo(slot) {
+  const key = LOGO_KEYS[slot];
+  if (!key) return null;
+  const rec = await getImage(key);
+  if (!rec) return null;
+  return rec.blob ? rec : { ...rec, blob: await blobOf(rec) };
+}
+
+async function removeLogo(slot) {
+  const key = LOGO_KEYS[slot];
+  if (key) await removeImage(key);
+}
+
+/** 2枠ぶんまとめて読む。片方しかなければ、あるほうで埋める。 */
+async function loadLogos() {
+  const [onPhoto, onLight] = await Promise.all([getLogo('onPhoto'), getLogo('onLight')]);
+  return { onPhoto: onPhoto || onLight, onLight: onLight || onPhoto, hasOnPhoto: !!onPhoto, hasOnLight: !!onLight };
+}
+
+/** IndexedDB から素のレコードを読む（控えの取り出しにも使う） */
+function getRaw(key) {
+  return openDB().then((db) => new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readonly');
+    const req = t.objectStore(STORE).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+async function getImage(key) {
+  if (backend.isShared) {
+    if (!remoteIndex.size) await listStored();
+    const meta = remoteIndex.get(key);
+    if (!meta) return null;
+    return { ...meta, blob: await blobOf(meta) };
+  }
+  return getRaw(key);
+}
+
+async function removeImage(key) {
+  if (backend.isShared) {
+    if (!remoteIndex.size) await listStored();
+    const meta = remoteIndex.get(key);
+    if (meta) {
+      await backend.deleteImage(meta.id);
+      remoteIndex.delete(key);
+    }
+    return;
+  }
+  return tx('readwrite', (store) => store.delete(key));
+}
+
+/** 素材写真だけを消す。登録したロゴは残す（取り込み直しのたびに上げ直すのは手間なので）。 */
+async function clearAll() {
+  const all = await listStored();
+  for (const item of all) await removeImage(item.key);
+}
+
+/* --------------------------- タグ --------------------------- */
+
+function loadTags() {
+  if (backend.isShared) return backend.getDoc(TAGS_KEY) || {};
+  try {
+    return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveTags(tags) {
+  if (backend.isShared) {
+    backend.putDoc(TAGS_KEY, tags);
+    return;
+  }
+  localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+}
+
+function getTags(key) {
+  return loadTags()[key] || [];
+}
+
+function toggleTag(key, tag) {
+  const all = loadTags();
+  const cur = new Set(all[key] || []);
+  // scene / sku / space は排他ではなく複数可。ただし sku は1つに絞る。
+  const skuIds = TAG_VOCAB.sku.map((t) => t.id);
+  const spaceIds = TAG_VOCAB.space.map((t) => t.id);
+  if (cur.has(tag)) {
+    cur.delete(tag);
+  } else {
+    if (skuIds.includes(tag)) skuIds.forEach((s) => cur.delete(s));
+    if (spaceIds.includes(tag)) spaceIds.forEach((s) => cur.delete(s));
+    cur.add(tag);
+  }
+  all[key] = [...cur];
+  saveTags(all);
+  return all[key];
+}
+
+/* --------------------------- 画像の自動選択 --------------------------- */
+
+/**
+ * 投稿プランに合う画像をライブラリから選ぶ。
+ * タグが付いていればタグで、付いていなければ取込済みの中から決定的に選ぶ。
+ * 「毎回同じ写真ばかり」を避けるため、seed で回す。
+ *
+ * @param {Array} stored listStored() の結果
+ * @param {object} plan  engine の image プラン
+ * @param {string} seed  決定性のためのシード（通常は post.id）
+ * @param {string[]} exclude 除外したいキー（同日に別投稿で使った写真など）
+ */
+function pickImage(stored, plan, seed, exclude = []) {
+  if (!stored.length) return null;
+  const tags = loadTags();
+  const pool = stored.filter((s) => !exclude.includes(s.key));
+  const usable = pool.length ? pool : stored;
+
+  const scored = usable.map((item) => {
+    const t = tags[item.key] || [];
+    let score = 0;
+    // SKU 一致は強く効かせる。'both' は減点なし。
+    if (t.includes(plan.preferSku)) score += 6;
+    else if (t.includes('both')) score += 3;
+    else if (t.includes('monster') || t.includes('sova')) score -= 4; // 逆のSKUが写っている
+    // シーンの相性
+    const sceneIdx = plan.preferScene.findIndex((s) => t.includes(s));
+    if (sceneIdx >= 0) score += 5 - sceneIdx;
+    // 合成なら余白のある写真を優先、そのまま使うなら余白なしでも構わない
+    if (plan.mode === 'composite') {
+      if (t.includes(plan.preferSpace)) score += 3;
+      if (t.includes('space-none')) score -= 5;
+    }
+    if (t.length === 0) score -= 1; // 未タグはわずかに後ろへ
+    return { item, score };
+  });
+
+  const max = Math.max(...scored.map((s) => s.score));
+  const top = scored.filter((s) => s.score === max);
+  // 同点の中から seed で決定的に1枚
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return top[h % top.length].item;
+}
+
+/** カタログと取込状況を突き合わせた一覧を返す（ライブラリ画面用） */
+async function catalogStatus() {
+  const stored = await listStored();
+  const byKey = new Map(stored.map((s) => [s.key, s]));
+  const tags = loadTags();
+  const rows = IMAGE_CATALOG.map((c) => ({
+    ...c,
+    stored: byKey.get(c.file) || null,
+    tags: tags[c.file] || []
+  }));
+  // カタログにない追加素材
+  const extraKeys = stored.filter((s) => !IMAGE_CATALOG.some((c) => c.file === s.key));
+  const extras = extraKeys.map((s) => ({
+    file: s.key,
+    driveId: null,
+    shoot: '追加素材',
+    viewUrl: null,
+    thumbUrl: null,
+    stored: s,
+    tags: tags[s.key] || []
+  }));
+  return [...rows, ...extras];
+}
+
+  return {
+    "normalizeName": normalizeName,
+    "inspectFiles": inspectFiles,
+    "importFiles": importFiles,
+    "listStored": listStored,
+    "blobOf": blobOf,
+    "LOGO_SLOTS": LOGO_SLOTS,
+    "saveLogo": saveLogo,
+    "getLogo": getLogo,
+    "removeLogo": removeLogo,
+    "loadLogos": loadLogos,
+    "getImage": getImage,
+    "removeImage": removeImage,
+    "clearAll": clearAll,
+    "loadTags": loadTags,
+    "saveTags": saveTags,
+    "getTags": getTags,
+    "toggleTag": toggleTag,
+    "pickImage": pickImage,
+    "catalogStatus": catalogStatus
+  };
+});
+__def("composer.js", function (__req) {
+// 投稿画像の合成
+//
+// 実際の @protein.monster_official の投稿デザインに合わせている。
+//   ・左上にロゴロックアップ（PROTEIN 白 / MONSTER オレンジの2段）
+//   ・オレンジの角丸ラベルで前置き
+//   ・スペックのチップを横並び
+//   ・数値訴求はオレンジの帯に白の極太数字
+//   ・写真の上に暗いグラデーションを敷いて文字を読ませる
+//
+// フォントは Web フォントの読み込み完了を待ってから描く（待たないと別書体で描かれる）。
+
+const ASPECTS = {
+  '4:5': { w: 1080, h: 1350, label: '縦 4:5（Instagram推奨）' },
+  '1:1': { w: 1080, h: 1080, label: '正方形 1:1' },
+  '16:9': { w: 1200, h: 675, label: '横 16:9（X推奨）' }
+};
+
+const POSITIONS = {
+  bottom: '文字を下に置く',
+  top: '文字を上に置く'
+};
+
+const TEMPLATES = {
+  stat: '数値主役（大きな数字＋オレンジ帯）',
+  hook: 'コピー主役（見出し2行）',
+  band: '上下帯（ロゴ帯＋コピー帯）'
+};
+
+const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif';
+
+// ブランドの基本色。accent は設定で変更できる。
+const BRAND = {
+  orange: '#f0821e',
+  ink: '#111111',
+  white: '#ffffff'
+};
+
+let fontsReady = null;
+function ensureFonts() {
+  if (fontsReady) return fontsReady;
+  fontsReady = (async () => {
+    if (!document.fonts) return;
+    try {
+      await Promise.all([
+        document.fonts.load('900 120px "Noto Sans JP"'),
+        document.fonts.load('700 48px "Noto Sans JP"'),
+        document.fonts.load('500 32px "Noto Sans JP"'),
+        document.fonts.load('400 28px "Noto Sans JP"')
+      ]);
+      await document.fonts.ready;
+    } catch {
+      /* 読めなくても既定書体で描く */
+    }
+  })();
+  return fontsReady;
+}
+
+async function loadBitmap(blob) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(blob);
+    } catch {
+      /* fallthrough */
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+}
+
+/* ------------------------- 描画の下請け ------------------------- */
+
+function drawCover(ctx, img, W, H, focus = 0.5) {
+  const scale = Math.max(W / img.width, H / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  ctx.drawImage(img, (W - dw) / 2, (H - dh) * focus, dw, dh);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/** 日本語は単語境界がないので1文字ずつ測って折り返す */
+function wrap(ctx, text, maxWidth) {
+  const out = [];
+  for (const para of String(text ?? '').split('\n')) {
+    let line = '';
+    for (const ch of para) {
+      if (ctx.measureText(line + ch).width > maxWidth && line) {
+        out.push(line);
+        line = ch;
+      } else {
+        line += ch;
+      }
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/** 下から上へ暗くするグラデーション。写真の上の文字を読ませるため。 */
+function scrimBottom(ctx, W, H, fromRatio, strength = 0.86) {
+  const top = fromRatio * H;
+  const g = ctx.createLinearGradient(0, top, 0, H);
+  g.addColorStop(0, 'rgba(8,8,8,0)');
+  g.addColorStop(0.45, `rgba(8,8,8,${strength * 0.62})`);
+  g.addColorStop(1, `rgba(8,8,8,${strength})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, top, W, H - top);
+}
+
+function scrimTop(ctx, W, H, toRatio, strength = 0.7) {
+  const bottom = toRatio * H;
+  const g = ctx.createLinearGradient(0, 0, 0, bottom);
+  g.addColorStop(0, `rgba(8,8,8,${strength})`);
+  g.addColorStop(1, 'rgba(8,8,8,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, bottom);
+}
+
+function setTracking(ctx, px) {
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${px}px`;
+}
+
+/** ロゴが占める高さ。レイアウトはこの値を前提に組む。 */
+function logoHeight(W) {
+  return W * 0.036 * 2.04;
+}
+
+/**
+ * ロゴを置く。戻り値は占有した高さ。
+ *
+ * 支給ロゴ（logo）が渡されていれば、それを縦横比を保ったまま拡縮して置くだけで、
+ * 色も字形も一切変えない。渡されていないときだけ、文字で組んだ代用を描く。
+ * ブランドのロゴは描き起こしてよいものではないので、支給ファイルを優先する。
+ */
+function drawLogo(ctx, x, y, W, accent, logo = null) {
+  const h = logoHeight(W);
+  if (logo && logo.width && logo.height) {
+    const w = (logo.width / logo.height) * h;
+    ctx.drawImage(logo, x, y, w, h);
+    return h;
+  }
+  const size = W * 0.036;
+  const lh = size * 1.02;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.font = `900 ${size}px ${FONT}`;
+  setTracking(ctx, size * 0.02);
+  ctx.fillStyle = BRAND.white;
+  ctx.fillText('PROTEIN', x, y);
+  ctx.fillStyle = accent;
+  ctx.fillText('MONSTER', x, y + lh);
+  setTracking(ctx, 0);
+  return lh * 2;
+}
+
+/** オレンジの角丸ラベル。戻り値は占有した高さ。 */
+function drawEyebrow(ctx, text, x, y, W, accent) {
+  if (!text) return 0;
+  const size = W * 0.03;
+  ctx.font = `700 ${size}px ${FONT}`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  const padX = size * 0.7;
+  const padY = size * 0.42;
+  const w = ctx.measureText(text).width + padX * 2;
+  const h = size + padY * 2;
+  ctx.fillStyle = accent;
+  roundRect(ctx, x, y, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = BRAND.white;
+  ctx.fillText(text, x + padX, y + padY);
+  return h;
+}
+
+/** スペックのチップを横並び。戻り値は占有した高さ。 */
+function drawChips(ctx, chips, x, y, W, maxW, accent) {
+  if (!chips || !chips.length) return 0;
+  const size = W * 0.031;
+  const padX = size * 0.85;
+  const padY = size * 0.5;
+  const h = size + padY * 2;
+  const gap = size * 0.5;
+
+  let cx = x;
+  let cy = y;
+  let rows = 1;
+  for (const chip of chips) {
+    const label = chip.k;
+    const value = chip.v;
+    ctx.font = `500 ${size}px ${FONT}`;
+    const lw = ctx.measureText(label + ' ').width;
+    ctx.font = `700 ${size}px ${FONT}`;
+    const vw = ctx.measureText(value).width;
+    const w = lw + vw + padX * 2;
+
+    if (cx > x && cx + w > x + maxW) {
+      cx = x;
+      cy += h + gap;
+      rows++;
+    }
+
+    ctx.fillStyle = 'rgba(10,10,10,0.72)';
+    roundRect(ctx, cx, cy, w, h, h / 2);
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = Math.max(1.5, W * 0.0018);
+    roundRect(ctx, cx, cy, w, h, h / 2);
+    ctx.stroke();
+
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.font = `500 ${size}px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.fillText(label, cx + padX, cy + padY);
+    ctx.font = `700 ${size}px ${FONT}`;
+    ctx.fillStyle = accent;
+    ctx.fillText(value, cx + padX + lw, cy + padY);
+
+    cx += w + gap;
+  }
+  return rows * h + (rows - 1) * gap;
+}
+
+/* ------------------------- テンプレート ------------------------- */
+
+function renderStat(ctx, ov, geo, accent) {
+  const { W, H, pad, logo } = geo;
+  const top = ov.position === 'top';
+
+  // 先に高さを積算する。上寄せのときは、その高さぶん下げた位置を「底」として扱う。
+  const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
+  const suffixH = ov.suffix ? W * 0.048 * 1.5 : 0;
+  const numSize = W * 0.235;
+  const bandH = numSize * 1.16;
+  const leadSize = W * 0.058;
+  ctx.font = `700 ${leadSize}px ${FONT}`;
+  const leadLines = ov.lead ? wrap(ctx, ov.lead, W - pad * 2) : [];
+  const leadH = leadLines.length * leadSize * 1.32;
+  const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.02 : 0;
+  const blockH = (chipsH ? chipsH + W * 0.035 : 0) + suffixH + bandH + W * 0.022 + leadH + eyebrowH;
+
+  const logoH = logoHeight(W);
+  if (top) {
+    scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
+    scrimBottom(ctx, W, H, 0.86, 0.5);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
+  } else {
+    scrimBottom(ctx, W, H, 0.34);
+    scrimTop(ctx, W, H, 0.22, 0.55);
+    drawLogo(ctx, pad, pad, W, accent, logo);
+  }
+
+  let bottom = top ? pad + blockH : H - pad;
+
+  if (chipsH) {
+    drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
+    bottom -= chipsH + W * 0.035;
+  }
+
+  if (ov.suffix) {
+    const s2 = W * 0.048;
+    ctx.font = `700 ${s2}px ${FONT}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = BRAND.white;
+    ctx.fillText(ov.suffix, pad, bottom);
+    bottom -= s2 * 1.5;
+  }
+
+  // オレンジ帯＋極太数字
+  ctx.font = `900 ${numSize}px ${FONT}`;
+  setTracking(ctx, -numSize * 0.02);
+  const numW = ctx.measureText(ov.big || '').width;
+  const bandPad = numSize * 0.11;
+  const bandY = bottom - bandH;
+  ctx.fillStyle = accent;
+  roundRect(ctx, pad, bandY, numW + bandPad * 2, bandH, W * 0.014);
+  ctx.fill();
+  ctx.fillStyle = BRAND.white;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(ov.big || '', pad + bandPad, bandY + bandH * 0.52);
+  setTracking(ctx, 0);
+  bottom = bandY - W * 0.022;
+
+  if (leadLines.length) {
+    ctx.font = `700 ${leadSize}px ${FONT}`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    let y = bottom - (leadLines.length - 1) * leadSize * 1.32;
+    ctx.fillStyle = BRAND.white;
+    for (const line of leadLines) {
+      ctx.fillText(line, pad, y);
+      y += leadSize * 1.32;
+    }
+    bottom -= leadH;
+  }
+
+  if (ov.eyebrow) {
+    drawEyebrow(ctx, ov.eyebrow, pad, bottom - W * 0.03 * 1.84 - W * 0.02, W, accent);
+  }
+}
+
+function renderHook(ctx, ov, geo, accent) {
+  const { W, H, pad, logo } = geo;
+  const top = ov.position === 'top';
+
+  const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
+  const subSize = W * 0.038;
+  ctx.font = `500 ${subSize}px ${FONT}`;
+  const subLines = ov.sub ? wrap(ctx, ov.sub, W - pad * 2) : [];
+  const subH = subLines.length ? subLines.length * subSize * 1.5 + W * 0.012 : 0;
+  const headSize = W * 0.092;
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  const headLines = wrap(ctx, ov.big, W - pad * 2 - W * 0.04);
+  const headLh = headSize * 1.34;
+  const headH = headLines.length * headLh;
+  const eyebrowH = ov.eyebrow ? W * 0.03 * 1.84 + W * 0.028 : 0;
+  const blockH = (chipsH ? chipsH + W * 0.04 : 0) + subH + headH + eyebrowH;
+
+  const logoH = logoHeight(W);
+  if (top) {
+    scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
+    scrimBottom(ctx, W, H, 0.86, 0.5);
+    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
+  } else {
+    scrimBottom(ctx, W, H, 0.3);
+    scrimTop(ctx, W, H, 0.22, 0.55);
+    drawLogo(ctx, pad, pad, W, accent, logo);
+  }
+
+  let bottom = top ? pad + blockH : H - pad;
+
+  if (chipsH) {
+    drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
+    bottom -= chipsH + W * 0.04;
+  }
+
+  if (subLines.length) {
+    ctx.font = `500 ${subSize}px ${FONT}`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    let y = bottom;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = subLines.length - 1; i >= 0; i--) {
+      ctx.fillText(subLines[i], pad, y);
+      y -= subSize * 1.5;
+    }
+    bottom -= subH;
+  }
+
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  setTracking(ctx, -headSize * 0.015);
+  let y = bottom - (headLines.length - 1) * headLh;
+  const blockTop = y - headSize * 0.86;
+
+  ctx.fillStyle = accent;
+  ctx.fillRect(pad, blockTop + headSize * 0.18, W * 0.011, headH - headSize * 0.34);
+
+  ctx.fillStyle = BRAND.white;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  for (const line of headLines) {
+    ctx.fillText(line, pad + W * 0.042, y);
+    y += headLh;
+  }
+  setTracking(ctx, 0);
+
+  if (ov.eyebrow) {
+    drawEyebrow(ctx, ov.eyebrow, pad, blockTop - W * 0.03 * 1.84 - W * 0.028, W, accent);
+  }
+}
+
+function renderBand(ctx, ov, geo, accent) {
+  const { W, H, pad, logo } = geo;
+  // 上下帯は position でロゴ帯とコピー帯を入れ替える
+  const flip = ov.position === 'top';
+
+  // ロゴ帯：ロゴと前置き
+  const topH = W * 0.14;
+  const logoBarY = flip ? H - topH : 0;
+  ctx.fillStyle = 'rgba(8,8,8,0.9)';
+  ctx.fillRect(0, logoBarY, W, topH);
+  drawLogo(ctx, pad, logoBarY + (topH - logoHeight(W)) / 2, W, accent, logo);
+  if (ov.eyebrow) {
+    const s = W * 0.03;
+    ctx.font = `700 ${s}px ${FONT}`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(ov.eyebrow, W - pad, logoBarY + topH / 2);
+    ctx.textAlign = 'left';
+  }
+
+  // 下帯：見出し・小見出し・チップ
+  const headSize = W * 0.062;
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  const headLines = wrap(ctx, ov.big, W - pad * 2);
+  const headLh = headSize * 1.3;
+  ctx.font = `500 ${W * 0.034}px ${FONT}`;
+  const subLines = ov.sub ? wrap(ctx, ov.sub, W - pad * 2) : [];
+  const subLh = W * 0.034 * 1.55;
+  const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
+
+  const inner = W * 0.042;
+  const bandH =
+    inner * 2 +
+    headLines.length * headLh +
+    (subLines.length ? subLines.length * subLh + W * 0.012 : 0) +
+    (chipsH ? chipsH + W * 0.03 : 0);
+  const bandY = flip ? 0 : H - bandH;
+  ctx.fillStyle = 'rgba(8,8,8,0.9)';
+  ctx.fillRect(0, bandY, W, bandH);
+
+  let y = bandY + inner;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  setTracking(ctx, -headSize * 0.015);
+  ctx.fillStyle = BRAND.white;
+  for (const line of headLines) {
+    ctx.fillText(line, pad, y);
+    y += headLh;
+  }
+  setTracking(ctx, 0);
+
+  if (subLines.length) {
+    y += W * 0.012;
+    ctx.font = `500 ${W * 0.034}px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    for (const line of subLines) {
+      ctx.fillText(line, pad, y);
+      y += subLh;
+    }
+  }
+
+  if (chipsH) {
+    y += W * 0.03;
+    drawChips(ctx, ov.chips, pad, y, W, W - pad * 2, accent);
+  }
+}
+
+/** チップの占有高さだけを測る（レイアウトを下から積むため） */
+function measureChips(ctx, chips, W, maxW) {
+  if (!chips || !chips.length) return 0;
+  const size = W * 0.031;
+  const padX = size * 0.85;
+  const h = size + size * 0.5 * 2;
+  const gap = size * 0.5;
+  let x = 0;
+  let rows = 1;
+  for (const chip of chips) {
+    ctx.font = `500 ${size}px ${FONT}`;
+    const lw = ctx.measureText(chip.k + ' ').width;
+    ctx.font = `700 ${size}px ${FONT}`;
+    const w = lw + ctx.measureText(chip.v).width + padX * 2;
+    if (x > 0 && x + w > maxW) {
+      x = 0;
+      rows++;
+    }
+    x += w + gap;
+  }
+  return rows * h + (rows - 1) * gap;
+}
+
+/* ------------------------- 本体 ------------------------- */
+
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {ImageBitmap|HTMLImageElement} img
+ * @param {object} opts { aspect, overlay, accent, focus }
+ */
+async function render(canvas, img, opts = {}) {
+  await ensureFonts();
+  const { aspect = '4:5', overlay = null, accent = BRAND.orange, focus = 0.5, logo = null } = opts;
+  const { w: W, h: H } = ASPECTS[aspect] || ASPECTS['4:5'];
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = BRAND.ink;
+  ctx.fillRect(0, 0, W, H);
+  if (img) drawCover(ctx, img, W, H, focus);
+
+  if (!overlay) return canvas;
+
+  const geo = { W, H, pad: Math.round(W * 0.062), logo };
+  ctx.save();
+  const template = overlay.template || 'hook';
+  if (template === 'stat') renderStat(ctx, overlay, geo, accent);
+  else if (template === 'band') renderBand(ctx, overlay, geo, accent);
+  else renderHook(ctx, overlay, geo, accent);
+  ctx.restore();
+
+  return canvas;
+}
+
+function toBlob(canvas, type = 'image/jpeg', quality = 0.94) {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+  return {
+    "ASPECTS": ASPECTS,
+    "POSITIONS": POSITIONS,
+    "TEMPLATES": TEMPLATES,
+    "FONT": FONT,
+    "BRAND": BRAND,
+    "ensureFonts": ensureFonts,
+    "loadBitmap": loadBitmap,
+    "drawCover": drawCover,
+    "roundRect": roundRect,
+    "wrap": wrap,
+    "setTracking": setTracking,
+    "logoHeight": logoHeight,
+    "render": render,
+    "toBlob": toBlob,
+    "download": download
+  };
+});
+__def("recipe.js", function (__req) {
+// レシピ投稿の4枚組を描く
+//
+// 公式アカウントのレシピ投稿の構成をそのまま再現している。
+//   ① タイトル   … できあがり写真＋黒ラベル＋白の大見出し＋下部の誘導帯
+//   ② 材料       … オレンジ帯の見出し＋クリーム地に材料表
+//   ③ 作り方     … RECIPE の見出し＋調理時間バッジ＋番号つき手順
+//   ④ 締め       … 黒地に THANK YOU FOR READING と保存の誘導
+//
+// 4枚とも 1080×1350（4:5）で書き出す。カルーセルは全枚同じ比率でないと
+// トリミングされるため、ここは固定にしている。
+
+const { FONT, BRAND, roundRect, wrap, setTracking, drawCover, ensureFonts, toBlob } = __req("composer.js");
+
+const SLIDES = {
+  title: '① タイトル',
+  ingredients: '② 材料',
+  steps: '③ 作り方',
+  outro: '④ 保存の誘導'
+};
+
+const W = 1080;
+const H = 1350;
+const CREAM = '#fbe9dc';
+const INK = '#1a1a1a';
+
+/* --------------------------- 下請け --------------------------- */
+
+/** 斜体がない書体なので、変形で傾けて描く */
+function drawOblique(ctx, text, x, y, skew = -0.18) {
+  ctx.save();
+  ctx.transform(1, 0, skew, 1, 0, 0);
+  ctx.fillText(text, x - skew * y, y);
+  ctx.restore();
+}
+
+/** 中央揃えで複数行。戻り値は使った高さ。 */
+function centerLines(ctx, lines, cx, top, lh) {
+  let y = top;
+  for (const line of lines) {
+    ctx.fillText(line, cx, y);
+    y += lh;
+  }
+  return lines.length * lh;
+}
+
+/** 一部だけ色を変えられる1行。中央揃え。 */
+function drawSplitLine(ctx, text, accentPart, cx, y, size, baseColor, accentColor) {
+  ctx.font = `700 ${size}px ${FONT}`;
+  const total = ctx.measureText(text).width;
+  let x = cx - total / 2;
+  ctx.textAlign = 'left';
+  const idx = accentPart ? text.indexOf(accentPart) : -1;
+  const parts = idx < 0
+    ? [{ t: text, c: baseColor }]
+    : [
+        { t: text.slice(0, idx), c: baseColor },
+        { t: accentPart, c: accentColor },
+        { t: text.slice(idx + accentPart.length), c: baseColor }
+      ];
+  for (const part of parts) {
+    if (!part.t) continue;
+    ctx.fillStyle = part.c;
+    ctx.fillText(part.t, x, y);
+    x += ctx.measureText(part.t).width;
+  }
+  return total;
+}
+
+/**
+ * 明るい背景に置くロゴ。支給ファイルがあればそれをそのまま（縦横比のまま）置く。
+ * 無いときだけ、文字で組んだ代用を描く。
+ */
+function drawLogoDark(ctx, cx, y, size, accent, logo = null) {
+  if (logo && logo.width && logo.height) {
+    const h = size * 2.04;
+    const w = (logo.width / logo.height) * h;
+    ctx.drawImage(logo, cx - w / 2, y, w, h);
+    return;
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `900 ${size}px ${FONT}`;
+  setTracking(ctx, size * 0.02);
+  ctx.fillStyle = INK;
+  ctx.fillText('PROTEIN', cx, y);
+  ctx.fillStyle = accent;
+  ctx.fillText('MONSTER', cx, y + size * 1.02);
+  setTracking(ctx, 0);
+}
+
+/* --------------------------- ① タイトル --------------------------- */
+
+function renderTitle(ctx, r, img, accent, swipeBar) {
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, 0, W, H);
+  if (img) drawCover(ctx, img, W, H, 0.58);
+
+  // 上を少しだけ暗くして文字を読ませる
+  const g = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  g.addColorStop(0, 'rgba(10,10,10,0.5)');
+  g.addColorStop(1, 'rgba(10,10,10,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H * 0.5);
+
+  const cx = W / 2;
+  const pad = W * 0.07;
+
+  // 黒の角丸ラベル（一部オレンジ）。ラベルの無い原稿では省く。
+  const labelSize = W * 0.046;
+  const boxY = H * 0.085;
+  let boxH = 0;
+  if (r.label) {
+    ctx.font = `700 ${labelSize}px ${FONT}`;
+    const labelW = ctx.measureText(r.label).width;
+    const padX = labelSize * 0.9;
+    const padY = labelSize * 0.5;
+    const boxW = labelW + padX * 2;
+    boxH = labelSize + padY * 2;
+    ctx.fillStyle = 'rgba(20,20,20,0.92)';
+    roundRect(ctx, cx - boxW / 2, boxY, boxW, boxH, boxH * 0.42);
+    ctx.fill();
+    ctx.textBaseline = 'top';
+    drawSplitLine(ctx, r.label, r.labelAccent, cx, boxY + padY, labelSize, BRAND.white, accent);
+  }
+
+  // 大見出し（黒フチ＋白）
+  const titleSize = W * 0.085;
+  ctx.font = `900 ${titleSize}px ${FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  setTracking(ctx, -titleSize * 0.02);
+  const lines = wrap(ctx, r.title, W - pad * 2);
+  const lh = titleSize * 1.28;
+  const top = boxY + boxH + W * 0.045;
+  ctx.lineWidth = titleSize * 0.16;
+  ctx.strokeStyle = 'rgba(15,15,15,0.85)';
+  ctx.lineJoin = 'round';
+  let y = top;
+  for (const line of lines) { ctx.strokeText(line, cx, y); y += lh; }
+  ctx.fillStyle = BRAND.white;
+  y = top;
+  for (const line of lines) { ctx.fillText(line, cx, y); y += lh; }
+  setTracking(ctx, 0);
+
+  // 下部の誘導帯
+  const barSize = W * 0.04;
+  ctx.font = `700 ${barSize}px ${FONT}`;
+  const barW = ctx.measureText(swipeBar).width + barSize * 2.2;
+  const barH = barSize * 2.1;
+  const barY = H - W * 0.075 - barH;
+  ctx.fillStyle = BRAND.white;
+  roundRect(ctx, cx - barW / 2, barY, barW, barH, W * 0.008);
+  ctx.fill();
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(swipeBar, cx, barY + barH / 2);
+}
+
+/* --------------------------- ② 材料 --------------------------- */
+
+function renderIngredients(ctx, r, accent, logo) {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const pad = W * 0.085;
+
+  // オレンジ帯の見出し
+  const titleSize = W * 0.062;
+  ctx.font = `900 ${titleSize}px ${FONT}`;
+  const titleLines = wrap(ctx, r.title, W - pad * 2);
+  const bandH = titleLines.length * titleSize * 1.28 + W * 0.055;
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 0, W, bandH);
+  ctx.fillStyle = BRAND.white;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  centerLines(ctx, titleLines, cx, W * 0.028, titleSize * 1.28);
+
+  // 「材料/1人前」
+  const headSize = W * 0.05;
+  const dotR = headSize * 0.5;
+  const headY = bandH + W * 0.075;
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.arc(pad + dotR, headY + headSize * 0.5, dotR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = `900 ${headSize}px ${FONT}`;
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('材料/1人前', pad + dotR * 2 + headSize * 0.45, headY);
+
+  // 材料表
+  const rowSize = W * 0.042;
+  const rowH = rowSize * 2.05;
+  let y = headY + headSize + W * 0.055;
+  const tableL = pad + W * 0.03;
+  const tableR = W - pad;
+  for (const item of r.ingredients) {
+    // 品目名が長い行だけ、分量とぶつからないところまで文字を縮める
+    let size = rowSize;
+    for (let i = 0; i < 6; i++) {
+      ctx.font = `700 ${size}px ${FONT}`;
+      const kw = ctx.measureText(item.k).width;
+      ctx.font = `900 ${size}px ${FONT}`;
+      const vw = ctx.measureText(item.v).width;
+      if (kw + vw + size * 0.8 <= tableR - tableL) break;
+      size *= 0.92;
+    }
+
+    ctx.font = `700 ${size}px ${FONT}`;
+    ctx.fillStyle = INK;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.k, tableL, y + rowH * 0.42);
+
+    ctx.font = `900 ${size}px ${FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(item.v, tableR, y + rowH * 0.42);
+
+    ctx.strokeStyle = 'rgba(240,130,30,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tableL, y + rowH * 0.9);
+    ctx.lineTo(tableR, y + rowH * 0.9);
+    ctx.stroke();
+    y += rowH;
+  }
+
+  drawLogoDark(ctx, cx, H - W * 0.235, W * 0.072, accent, logo);
+}
+
+/* --------------------------- ③ 作り方 --------------------------- */
+
+function renderSteps(ctx, r, accent) {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = W * 0.085;
+
+  // RECIPE
+  const recipeSize = W * 0.105;
+  ctx.font = `900 ${recipeSize}px ${FONT}`;
+  ctx.fillStyle = accent;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  setTracking(ctx, -recipeSize * 0.02);
+  drawOblique(ctx, 'RECIPE', pad, W * 0.075);
+  setTracking(ctx, 0);
+
+  // 調理時間バッジ
+  const bR = W * 0.088;
+  const bcx = W - pad - bR;
+  const bcy = W * 0.075 + bR * 0.75;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(2, W * 0.0025);
+  ctx.beginPath();
+  ctx.arc(bcx, bcy, bR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = INK;
+  ctx.font = `700 ${W * 0.026}px ${FONT}`;
+  ctx.textBaseline = 'middle';
+  ctx.fillText('調理時間', bcx, bcy - bR * 0.38);
+  ctx.font = `700 ${W * 0.026}px ${FONT}`;
+  ctx.fillText('約', bcx - bR * 0.42, bcy + bR * 0.28);
+  ctx.font = `900 ${W * 0.062}px ${FONT}`;
+  ctx.fillStyle = accent;
+  ctx.fillText(String(r.minutes), bcx + bR * 0.05, bcy + bR * 0.3);
+  ctx.font = `700 ${W * 0.026}px ${FONT}`;
+  ctx.fillStyle = INK;
+  ctx.fillText('分', bcx + bR * 0.52, bcy + bR * 0.45);
+
+  // 手順。行数が多いレシピでもはみ出さないよう、必要なぶんだけ縮める。
+  const startY = W * 0.29;
+  const avail = H - startY - W * 0.075;
+  const gutter = W * 0.105;
+  let textSize = W * 0.038;
+  let numSize = W * 0.072;
+  let lh = textSize * 1.55;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    ctx.font = `700 ${textSize}px ${FONT}`;
+    let total = 0;
+    for (const step of r.steps) {
+      const n = wrap(ctx, step, W - pad - gutter - pad).length;
+      total += Math.max(n * lh, numSize * 1.15) + W * 0.038;
+    }
+    if (total <= avail) break;
+    textSize *= 0.92;
+    numSize *= 0.92;
+    lh = textSize * 1.55;
+  }
+  let y = startY;
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < r.steps.length; i++) {
+    ctx.font = `700 ${textSize}px ${FONT}`;
+    const lines = wrap(ctx, r.steps[i], W - pad - gutter - pad);
+    const blockH = lines.length * lh;
+
+    // 番号（傾け）
+    ctx.font = `900 ${numSize}px ${FONT}`;
+    ctx.fillStyle = accent;
+    ctx.textAlign = 'left';
+    drawOblique(ctx, String(i + 1), pad, y);
+
+    // 縦罫線
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = Math.max(3, W * 0.004);
+    ctx.beginPath();
+    ctx.moveTo(pad + gutter - W * 0.028, y + textSize * 0.1);
+    ctx.lineTo(pad + gutter - W * 0.028, y + Math.max(blockH, numSize * 1.1) - textSize * 0.1);
+    ctx.stroke();
+
+    // 本文
+    ctx.font = `700 ${textSize}px ${FONT}`;
+    ctx.fillStyle = INK;
+    let ty = y;
+    for (const line of lines) { ctx.fillText(line, pad + gutter, ty); ty += lh; }
+
+    y += Math.max(blockH, numSize * 1.15) + W * 0.038;
+  }
+}
+
+/* --------------------------- ④ 締め --------------------------- */
+
+function renderOutro(ctx, outro, accent, thumbs = []) {
+  ctx.fillStyle = '#0b0b0b';
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const pad = W * 0.075;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `900 ${W * 0.062}px ${FONT}`;
+  ctx.fillStyle = accent;
+  setTracking(ctx, W * 0.004);
+  ctx.fillText(outro.headingEn, cx, W * 0.085);
+  setTracking(ctx, 0);
+
+  ctx.font = `700 ${W * 0.044}px ${FONT}`;
+  ctx.fillStyle = BRAND.white;
+  ctx.fillText(outro.headingJa, cx, W * 0.085 + W * 0.078);
+
+  // オレンジ枠のボックス
+  const boxSize = W * 0.036;
+  const boxLh = boxSize * 1.75;
+  const boxTop = W * 0.245;
+  const boxH = outro.box.length * boxLh + W * 0.075;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(2, W * 0.003);
+  ctx.fillStyle = 'rgba(240,130,30,0.14)';
+  roundRect(ctx, pad, boxTop, W - pad * 2, boxH, W * 0.022);
+  ctx.fill();
+  roundRect(ctx, pad, boxTop, W - pad * 2, boxH, W * 0.022);
+  ctx.stroke();
+  ctx.font = `500 ${boxSize}px ${FONT}`;
+  ctx.fillStyle = BRAND.white;
+  centerLines(ctx, outro.box, cx, boxTop + W * 0.037, boxLh);
+
+  // 他投稿のサムネ（あれば3枚）
+  const tTop = boxTop + boxH + W * 0.06;
+  const tW = (W - pad * 2 - W * 0.03 * 2) / 3;
+  const tH = thumbs.length ? tW * 1.25 : 0;
+  if (thumbs.length) {
+    for (let i = 0; i < Math.min(3, thumbs.length); i++) {
+      const x = pad + i * (tW + W * 0.03);
+      ctx.save();
+      roundRect(ctx, x, tTop, tW, tH, W * 0.012);
+      ctx.clip();
+      const img = thumbs[i];
+      const scale = Math.max(tW / img.width, tH / img.height);
+      ctx.drawImage(img, x + (tW - img.width * scale) / 2, tTop + (tH - img.height * scale) / 2,
+        img.width * scale, img.height * scale);
+      ctx.restore();
+    }
+  }
+
+  // 保存の誘導
+  const ctaY = tTop + tH + W * 0.075;
+  ctx.font = `700 ${W * 0.04}px ${FONT}`;
+  ctx.fillStyle = BRAND.white;
+  ctx.textAlign = 'center';
+  ctx.fillText(outro.cta, cx - W * 0.045, ctaY);
+
+  // しおりのかたち
+  const bw = W * 0.052;
+  const bh = bw * 1.35;
+  const bx = cx + W * 0.28;
+  const by = ctaY - bh * 0.12;
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx + bw, by);
+  ctx.lineTo(bx + bw, by + bh);
+  ctx.lineTo(bx + bw / 2, by + bh * 0.72);
+  ctx.lineTo(bx, by + bh);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/* --------------------------- 本体 --------------------------- */
+
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {'title'|'ingredients'|'steps'|'outro'} slide
+ * @param {object} recipe
+ * @param {object} opts { heroImg, thumbs, accent, outro, swipeBar, logo }
+ */
+async function renderSlide(canvas, slide, recipe, opts = {}) {
+  await ensureFonts();
+  const accent = opts.accent || BRAND.orange;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  if (slide === 'title') renderTitle(ctx, recipe, opts.heroImg, accent, opts.swipeBar || '');
+  else if (slide === 'ingredients') renderIngredients(ctx, recipe, accent, opts.logo || null);
+  else if (slide === 'steps') renderSteps(ctx, recipe, accent);
+  else renderOutro(ctx, opts.outro, accent, opts.thumbs || []);
+  ctx.restore();
+  return canvas;
+}
+
+/** レシピ投稿のキャプション。原稿の文言をそのまま使う。 */
+function buildRecipeCaption(recipe, product, hashtags = []) {
+  const n = recipe.nutrition;
+  const title = recipe.title.replace(/\n/g, '');
+  // 原稿によって「炭水化物」と「糖質」のどちらかしか無いので、あるものを書く
+  const carbPart = n.carb !== undefined ? `／炭水化物約${n.carb}g`
+    : n.sugar !== undefined ? `／糖質約${n.sugar}g` : '';
+  const lines = [
+    `${recipe.label}${title}`,
+    ''
+  ];
+  if (recipe.summaryLead) lines.push(recipe.summaryLead);
+  lines.push(
+    recipe.summary,
+    '',
+    '【材料（1人前）】',
+    ...recipe.ingredients.map((i) => `・${i.k}：${i.v}`),
+    '',
+    `【作り方】調理時間 約${recipe.minutes}分`,
+    ...recipe.steps.map((s, i) => `${i + 1}. ${s}`),
+    '',
+    '【1皿あたりの推定値】',
+    `エネルギー約${n.kcal}kcal／たんぱく質約${n.protein}g／脂質約${n.fat}g${carbPart}`,
+    `※上記は材料から算出した推定値です。麺そのものの分析値は1食（${product.servingG}g）あたり` +
+      `たんぱく質${product.nutrition.protein}g、${product.nutrition.kcal}kcalです。`,
+    '',
+    '※本品製造工場では、そば・大豆を含む製品を生産しています。豆類にアレルギーのある方はご注意ください。'
+  );
+  if (hashtags.length) lines.push('', hashtags.join(' '));
+  return lines.join('\n');
+}
+
+
+  return {
+    "SLIDE_W": W,
+    "SLIDE_H": H,
+    "SLIDES": SLIDES,
+    "renderSlide": renderSlide,
+    "buildRecipeCaption": buildRecipeCaption
+  };
+});
+__def("data/recipes.js", function (__req) {
+// レシピ原稿
+//
+// 原稿（Word 24本）から機械的に変換したもの。書き換えるとそのまま画像と
+// キャプションに反映される。追加するときは既存の1件をコピーするのが早い。
+//
+// ゆで時間の扱い:
+//   モンスター版の原稿は「ゆで3分」、ソバ版は「ゆで5分」を前提に書かれている。
+//   商品表示はどちらも「3〜5分」なので、手順の中のゆで時間は {boil} と書いておき、
+//   表示時に「3〜5」へ差し替える。調理時間も、原稿の目安時間（minutesBase）に
+//   ゆで時間の上限との差を足して換算する。
+//   例: 原稿5分（ゆで3分前提）→ 5 - 3 + 5 = 約7分
+//
+// label / labelAccent:
+//   label は①のタイトル画像に出る黒い角丸ラベル。labelAccent の文字だけオレンジになる。
+//   原稿のタイトルが「〜！」で始まるものは自動で切り出してある。空のものは
+//   ラベルなしで描画されるので、付けたい場合はここに書く。
+//
+// 画像:
+//   hero … ①の背景に使うできあがり写真。空ならダッシュボードのプルダウンから選ぶ。
+
+const RECIPES = [
+  {
+    key: 'M04', no: 4, sku: 'monster',
+    label: '', labelAccent: '',
+    title: '明太もちの極み冷製麺',
+    summaryLead: '【糖質プラスワン：切り餅】',
+    summary:
+      '相性抜群の「明太×もち」の組み合わせ！切り餅で、脂質を全く上げずに良質な糖質（デンプン）をガッツリ補給できます。腹持ちも最高です。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: '明太子（薄皮を取る）', v: '20g' },
+      { k: '切り餅', v: '1個（約50g）' },
+      { k: '大葉（千切りまたはちぎる）', v: '2枚' },
+      { k: 'めんつゆ（3倍濃縮）', v: '小さじ1' },
+    ],
+    steps: [
+      '切り餅は4等分のサイコロ状に切り、トースターで焼く。',
+      'プロテイン麺を{boil}分茹で、ザルで湯切りする。',
+      'ボウルにほぐした明太子とめんつゆを入れて混ぜ合わせ、麺を加えてよく和える。器に盛り付けて明太子・①をトッピングして大葉を散らす。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 349, protein: 38, fat: 3.4, carb: 41.6, fiber: 3.2 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M12', no: 12, sku: 'monster',
+    label: '超速！', labelAccent: '',
+    title: 'チキンサラダパスタ',
+    summaryLead: '',
+    summary:
+      '茹でて混ぜるだけ！サラダチキンと野菜で、減量期にも嬉しい高タンパク・低脂質なさっぱりパスタ。',
+    minutesBase: 4, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'サラダチキン', v: '適量' },
+      { k: 'トマト', v: '1/2個' },
+      { k: 'ベビーリーフ', v: '適量' },
+      { k: 'お好みのドレッシング（バジルやしそがおすすめ）', v: '適量' },
+    ],
+    steps: [
+      'プロテインモンスターを{boil}分茹で、ザルで湯切りし、水洗いする',
+      'ボウルに（1）を入れ、お好みのドレッシングで和え、ベビーリーフとトマトを加え、さっと混ぜる',
+      '（2）を器に盛り、割いたサラダチキンをトッピングする',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 281, protein: 43, fat: 4.4, sugar: 17.4, fiber: 2.2, salt: 2.5 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M15', no: 15, sku: 'monster',
+    label: '絶品！', labelAccent: '',
+    title: '冷やし豆乳担々麺のマッスル・リフレッシュ',
+    summaryLead: '',
+    summary:
+      '夏場のトレ後に最適！冷たい豆乳と練りごまのコク、ピリ辛肉味噌でタンパク質を補給する爽快減量麺。',
+    minutesBase: 7, boilBase: 3,
+    ingredients: [
+      // 原稿は「1束（50g）」だが、モンスターの1束は55g。確認のうえ修正した。
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: '鶏ひき肉（粗びき）', v: '70g' },
+      { k: 'きゅうり', v: '1/2本' },
+      { k: 'トマト', v: '1/4個' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: 'おろしにんにく', v: '小さじ1/2' },
+      { k: 'おろししょうが', v: '小さじ1/2' },
+      { k: 'テンメンジャン', v: '小さじ1' },
+      { k: '豆板醤（お好みで）', v: '小さじ1/2～1' },
+      { k: '豆乳', v: '150cc' },
+      { k: '練りごま', v: '大さじ2' },
+      { k: 'めんつゆ（2倍濃縮）', v: '大さじ2' },
+      { k: '白髪ねぎ', v: '少々' },
+      { k: '糸唐唐辛子', v: '少々' },
+      { k: '白ごま', v: '少々' },
+      { k: 'ラー油（お好みで）', v: '少々' },
+    ],
+    steps: [
+      'プロテイン麺を{boil}分茹で、ザルで湯切りし、水洗いする。きゅうりは薄切りに、トマトは角切りにする',
+      'フライパンにごま油をひき、鶏ひき肉を炒め、おろしにんにく、おろししょうが、テンメンジャン、豆板醤を加えて味を整える',
+      'ボウルに、豆乳、練りごま、めんつゆを入れてよく混ぜる',
+      'プロテイン麺を器に盛り、（3）をかけ、きゅうり、トマト、白髪ねぎ、糸唐辛子、白ごま、ラー油をトッピングする',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 669, protein: 59.8, fat: 37.6, sugar: 29.8, fiber: 6, salt: 6.4 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M17', no: 17, sku: 'monster',
+    label: '', labelAccent: '',
+    title: 'なめこと長芋とろろのおろしポン酢麺',
+    summaryLead: '【糖質プラスワン：長芋（とろろ）】',
+    summary:
+      '疲労回復に最適なネバネバ食材「長芋」をプラス！長芋は良質な糖質源でありながら、消化酵素が豊富で胃腸に優しく、トレ－ニング後のエネルギー補給に最適です。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'なめこ（水洗い不要の加熱済みタイプ、または冷凍）', v: '30g' },
+      { k: '大根おろし', v: '大さじ2（軽く水気を切る）' },
+      { k: '長芋（すりおろす）', v: '80g' },
+      { k: 'ポン酢', v: '大さじ1と1/2' },
+      { k: '小ねぎ（小口切り）', v: '少々' },
+    ],
+    steps: [
+      'プロテイン麺を{boil}分茹でる。残り1分のところでなめこを入れ、一緒にサッと茹でる。',
+      'ザルにあけて湯切りし、冷水でサッと洗って水気を切る。',
+      '器に麺となめこを盛り、すりおろした長芋（とろろ）と大根おろしを乗せ、ポン酢を回しかける。最後に小ねぎを散らす。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 294, protein: 35, fat: 3.1, carb: 31.6, fiber: 3.4 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M20', no: 20, sku: 'monster',
+    label: 'りんごとキムチ！', labelAccent: '',
+    title: 'ゆで卵の韓国風ピリ辛ビビン麺',
+    summaryLead: '【糖質プラスワン：りんご＆キムチ】',
+    summary:
+      '本場・韓国冷麺の知恵を拝借！千切りりんごの自然な甘みとみずみずしさが、コチュジャンの辛味とベストマッチ。キムチの発酵パワーも加わり、美味しく良質な糖質を補えます。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'ゆで卵（半分に切る）', v: '1/2個' },
+      { k: 'きゅうり（千切り）', v: '20g' },
+      { k: 'りんご（千切り）', v: '1/4個（約70g）' },
+      { k: '白菜キムチ', v: '30g' },
+      { k: 'コチュジャン', v: '小さじ1と1/2' },
+      { k: '酢', v: '大さじ1' },
+      { k: '醤油', v: '小さじ1' },
+      { k: 'ごま油', v: '小さじ1/2' },
+    ],
+    steps: [
+      'プロテイン麺を{boil}分茹で、ザルで湯切りし、氷水でキンキンに冷やしてしっかり水気を切る。',
+      '大きめのボウルにコチュジャン、酢、醤油、ごま油を入れて混ぜ合わせ、麺を入れてよく和える。',
+      '器に盛り付け、きゅうり、りんご、キムチ、ゆで卵をトッピングする。全体をよく混ぜて食べる。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 337, protein: 36, fat: 7.4, carb: 31.7, fiber: 3.3 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M21', no: 21, sku: 'monster',
+    label: '悪魔的旨さ！', labelAccent: '',
+    title: '冷やご飯で作るマッスルそばめし',
+    summaryLead: '【糖質プラスワン：冷やご飯（残りご飯）】',
+    summary:
+      'ご家庭で余りがちな「冷やご飯」を少しだけプラス！麺とご飯のダブル炭水化物に見えますが、プロテイン麺が高タンパク・低糖質なため、ご飯50gを足すことで減量期にドンピシャの黄金PFCバランスになります。ソースの香ばしさがたまりません！',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: '冷やご飯（または温かいご飯）', v: '50g（お茶碗1/3程度）' },
+      { k: 'ウスターソース（または中濃ソース）', v: '大さじ1と1/2' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: '天かす（揚げ玉）', v: '大さじ1' },
+      { k: '青のり、かつお節', v: '各少々' },
+    ],
+    steps: [
+      'プロテイン麺を{boil}分茹で、ザルで湯切りし、包丁でざっくりと細かく刻む（ご飯粒と馴染みやすくするため）。',
+      'フライパンにごま油を熱し、刻んだ麺とご飯を炒め合わせる。',
+      'ウスターソースを回し入れて香ばしく炒め、天かすを加えてサッと混ぜる。',
+      '器に盛り、青のりとかつお節をたっぷりかける。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 333, protein: 34, fat: 5, carb: 38, fiber: 2.5 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M22', no: 22, sku: 'monster',
+    label: '', labelAccent: '',
+    title: 'ほくほくポテトのガリバタ醤油麺',
+    summaryLead: '【糖質プラスワン：じゃがいも】',
+    summary:
+      '常備野菜の王様「じゃがいも」をレンチンして加えるだけ！じゃがいもはビタミンCも豊富で、良質なデンプン質がトレーニングのエネルギー源として最適です。バター醤油の香りが食欲を限界突破させます。',
+    minutesBase: 6, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'じゃがいも', v: '小1個（約100g）' },
+      { k: 'バター', v: '5g（小さじ1程度）' },
+      { k: '醤油', v: '小さじ1と1/2' },
+      { k: 'おろしにんにく', v: '少々' },
+      { k: '粗挽き黒こしょう', v: 'たっぷり' },
+      { k: 'パセリ(粉)', v: '適量' },
+    ],
+    steps: [
+      'じゃがいもは皮をむいて一口大に切り、耐熱容器に入れてふんわりラップをし、レンジ（600W）で約3分、竹串がスッと通るまで加熱する。',
+      'プロテイン麺を{boil}分茹で、ザルで湯切りする。（温かいまま使用）',
+      'ボウルに温かい麺と（1）のじゃがいも、バター、醤油、おろしにんにくを入れてよく絡める。じゃがいもを少し崩しながら混ぜると麺によく絡みます。',
+      '器に盛り、黒こしょう・パセリを振る。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 314, protein: 33, fat: 6, carb: 32, fiber: 2.6 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M23', no: 23, sku: 'monster',
+    label: 'デリ風！', labelAccent: 'デリ',
+    title: 'さつまいもとハニーマスタードのサラダ麺',
+    summaryLead: '【糖質プラスワン：さつまいも＆はちみつ】',
+    summary:
+      'ボディビルダーも愛用する最強の低GI炭水化物「さつまいも」をゴロゴロ追加！マヨネーズをハーフカロリーに控え、はちみつとマスタードで味付けることで、カフェのデリサラダのようなお洒落な一品に。',
+    minutesBase: 6, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'さつまいも', v: '約80g' },
+      { k: 'カロリーハーフマヨネーズ', v: '大さじ1/2' },
+      { k: 'はちみつ', v: '小さじ1' },
+      { k: '粒マスタード', v: '小さじ1' },
+      { k: '醤油', v: '小さじ½' },
+      { k: 'パセリ(みじん切り)', v: '少々' },
+    ],
+    steps: [
+      'さつまいもはよく洗い、皮ごと1cm角のサイコロ状に切り、レンジ（600W）で約2分半加熱して柔らかくする。',
+      'プロテイン麺を{boil}分茹で、ザルで湯切りし、冷水でしっかり洗って締める。',
+      'ボウルにマヨネーズ、はちみつ、粒マスタード、醤油を混ぜ合わせる。',
+      '麺とさつまいもをボウルに加えてよく和え、器に盛り付ける。パセリを散らす。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 355, protein: 33, fat: 7, carb: 40, fiber: 2.2 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M24', no: 24, sku: 'monster',
+    label: '', labelAccent: '',
+    title: 'トロトロ茄子の甘味噌だれ麺（田楽風）',
+    summaryLead: '【糖質プラスワン：みりん＆砂糖（甘味噌だれ）】',
+    summary:
+      '調味料で糖質を賢く補給！味噌にみりんと砂糖を加えた「甘味噌だれ」は、疲れた体に染み渡る良質なエネルギー源です。レンジでトロトロにした茄子との相性は宇宙クラス。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'なす', v: '1本' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: '[A] 味噌', v: '大さじ1' },
+      { k: '[A] みりん', v: '大さじ1' },
+      { k: '[A] 砂糖（またはラカント等）', v: '大さじ1/2' },
+      { k: '[A] おろししょうが', v: '少々' },
+      { k: 'いりごま、小ねぎ', v: '各少々' },
+    ],
+    steps: [
+      'なすはヘタを取り、縦半分に切ってから斜め薄切りにする。耐熱容器に入れ、ごま油を絡めてラップをし、レンジ（600W）で約2分半加熱する。',
+      '[A]の調味料を小鉢でよく混ぜ合わせて「甘味噌だれ」を作る。',
+      'プロテイン麺を{boil}分茹で、湯切りすして冷水で締め、水気を切る。',
+      '器に麺を盛り、トロトロの茄子を乗せ、甘味噌だれをかける。いりごまと小ねぎを散らす。',
+      '※茄子が温かいので、麺も温かくしました。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 330, protein: 34, fat: 6, carb: 35, fiber: 3 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M25', no: 25, sku: 'monster',
+    label: '喫茶店風！', labelAccent: '喫茶店',
+    title: '玉ねぎとケチャップの絶品ナポリタン',
+    summaryLead: '【糖質プラスワン：玉ねぎ＆ケチャップ】',
+    summary:
+      '身近な調味料「ケチャップ」は、実はトマトの糖質がギュッと詰まった優秀なエネルギー源！玉ねぎの甘みと合わせることで、特別な具材がなくても大満足の喫茶店風ナポリタンが完成します。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: '玉ねぎ', v: '1/4個（約50g）' },
+      { k: 'オリーブオイル', v: '小さじ1' },
+      { k: 'トマトケチャップ', v: '大さじ2' },
+      { k: 'コンソメ顆粒', v: '小さじ1/2' },
+      { k: '粉チーズ、パセリ（あれば）', v: '各少々' },
+    ],
+    steps: [
+      '玉ねぎは薄切りにし、耐熱容器に入れてラップをし、レンジ（600W）で1分半加熱してしんなりさせる。',
+      'プロテイン麺を{boil}分茹で、ザルで湯切りする（温かいまま使用）。',
+      'ボウルに温かい麺、加熱した玉ねぎ、オリーブオイル、ケチャップ、コンソメを入れて、ムラなく全体が赤くなるまでよく混ぜ合わせる。',
+      '器に盛り、お好みで粉チーズとパセリを振る。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 306, protein: 33, fat: 6, carb: 30, fiber: 2.8 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M26', no: 26, sku: 'monster',
+    label: '混ぜるだけ！', labelAccent: '',
+    title: '濃厚コーンポタージュスープ麺',
+    summaryLead: '【糖質プラスワン：コーンポタージュの素】',
+    summary:
+      '買い置きしてある「粉末コーンスープ」が大活躍！スープの素に含まれるデンプンやコーンの糖質が、トレーニング後のエネルギー補給にぴったり。お湯を注ぐだけで、まるでカフェのクリームパスタのような仕上がりに！',
+    minutesBase: 4, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: '市販のコーンポタージュスープの素（粉末）', v: '1袋' },
+      { k: '熱湯', v: '150ml（スープの規定量より少し少なめが濃厚でオススメ）' },
+      { k: '粗挽き黒こしょう、パセリ（あれば）', v: '各少々' },
+    ],
+    steps: [
+      'プロテイン麺を{boil}分茹で、ザルで湯切りする。（温かいまま使用）',
+      '器にコーンポタージュの素を入れ、熱湯を注いでダマにならないようにしっかりと混ぜる。',
+      '温かい麺をスープに入れ、よく絡める。仕上げに黒こしょうとパセリを振る。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 288, protein: 33, fat: 4, carb: 30, fiber: 2.3 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M27', no: 27, sku: 'monster',
+    label: 'スイーツ感覚！', labelAccent: '',
+    title: 'かぼちゃマッシュのハニー醤油麺',
+    summaryLead: '【糖質プラスワン：かぼちゃ＆はちみつ】',
+    summary:
+      '栄養満点で低GIな優秀炭水化物「かぼちゃ」を使用！レンチンしてマッシュしたかぼちゃに、少量の醤油とはちみつを合わせることで、みたらし団子のような甘じょっぱさがクセになるスイーツ感覚の和え麺です。',
+    minutesBase: 6, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'かぼちゃ（種とワタと皮を取る）', v: '約80g' },
+      { k: 'はちみつ', v: '小さじ1' },
+      { k: '醤油', v: '小さじ1' },
+      { k: '牛乳（または豆乳、水）', v: '大さじ1' },
+      { k: 'トッピング用かぼちゃ(皮付き・レンジ加熱)', v: 'お好みで' },
+    ],
+    steps: [
+      'かぼちゃは一口大に切り、耐熱容器に入れてふんわりラップをし、レンジ（600W）で約3分、柔らかくなるまで加熱する。',
+      '温かいうちにフォークでかぼちゃを潰し、はちみつ、醤油、牛乳を加えてなめらかなペースト状にする。',
+      'プロテイン麺を{boil}分茹でて湯切りし、温かいうちに（2）のペーストとよく和え、器に盛る。皮付きかぼちゃをトッピングする。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 299, protein: 33, fat: 3, carb: 35, fiber: 2 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M28', no: 28, sku: 'monster',
+    label: '満腹確定！', labelAccent: '',
+    title: 'オートミールとわかめの出汁ぞうすい麺',
+    summaryLead: '【糖質プラスワン：オートミール】',
+    summary:
+      'ダイエッターの味方「オートミール」でかさ増し＆良質な糖質をプラス！食物繊維も豊富で、めんつゆベースの和風スープを吸ったオートミールが麺に絡みつき、とんでもない満腹感を得られます。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'オートミール（クイックオーツ推奨）', v: '30g' },
+      { k: '乾燥わかめ', v: '小さじ1' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1と1/2' },
+      { k: '熱湯', v: '150ml' },
+      { k: 'ごま油', v: '小さじ1/2' },
+      { k: '白ごま', v: '少々' },
+    ],
+    steps: [
+      '大きめの器にオートミール、乾燥わかめ、めんつゆを入れ、熱湯を注いで軽く混ぜ、ラップをして2分ほど置いてふやかす。',
+      'その間にプロテイン麺を{boil}分茹で、ザルで湯切りする。',
+      '（1）の器に温かい麺を入れ、ごま油を回しかけ、白ごまを振る。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 325, protein: 35, fat: 5, carb: 35, fiber: 2.8 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'M30', no: 30, sku: 'monster',
+    label: '屋台の味！', labelAccent: '',
+    title: 'みりんと天かすの甘辛焼きうどん風',
+    summaryLead: '【糖質プラスワン：みりん＆天かす＆ケチャップ】',
+    summary:
+      '身近な調味料「みりん」と隠し味の「ケチャップ」で、深みのある甘辛ダレを作成！天かすでサクサク感とコクを足せば、お肉が入っていなくても大満足の屋台風焼きうどんになります。',
+    minutesBase: 5, boilBase: 3,
+    ingredients: [
+      { k: 'プロテイン麺', v: '1束（55g）' },
+      { k: 'キャベツ(ざく切り)', v: '30ｇ' },
+      { k: 'にんじん(細切り)', v: '15ｇ' },
+      { k: 'みりん', v: '大さじ1' },
+      { k: '醤油', v: '大さじ1小さじ2' },
+      { k: 'ケチャップ', v: '小さじ1（隠し味のコクと糖質）' },
+      { k: '天かす（揚げ玉）', v: '大さじ1' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: 'かつお節、青のり', v: '各少々' },
+    ],
+    steps: [
+      '小鉢にみりん、醤油、ケチャップを入れて混ぜ合わせておく。',
+      'プロテイン麺を{boil}分茹で、ザルで湯切りする。',
+      'フライパンにごま油を熱し、キャベツ・にんじん・茹でた麺を中火でサッと炒める。（1）の合わせ調味料を加え、水分が飛んでタレが麺にしっかりと絡むまで炒める。',
+      '器に盛り、天かす、かつお節、青のりをトッピングする。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 328, protein: 32, fat: 8, carb: 32, fiber: 2.8 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S01', no: 1, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'トマトとアボカドの塩レモン冷製蕎麦',
+    summaryLead: '【良質な脂質とビタミンをプラス】',
+    summary:
+      'アボカドとオリーブオイルで、女性の美容や体型維持に嬉しい良質な脂質（F）を補給し、トマトでビタミンと炭水化物（C）をプラス。プロテインSOVAの持つタンパク質と合わせて、理想的なバランスに整えた夏にぴったりの洋風蕎麦です。',
+    minutesBase: 7, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'トマト', v: '1/2個（約75g）' },
+      { k: 'アボカド', v: '1/4個（約35g）' },
+      { k: 'オリーブオイル', v: '小さじ1' },
+      { k: 'レモン汁', v: '小さじ1' },
+      { k: '塩こしょう', v: '少々' },
+    ],
+    steps: [
+      'トマトとアボカドは食べやすい角切りにする。ボウルに入れ、オリーブオイル、レモン汁、塩こしょうで和えておく。',
+      'プロテインモンスターSOVAを{boil}分茹で、ザルにあけて冷水でしっかりと締める。',
+      '水気をよく切った麺を器に盛り付け、1の具材を乗せる。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 288, protein: 22.3, fat: 12.2, carb: 25, fiber: 5.9, salt: 1.7 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S02', no: 2, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'オクラと長芋のネバネバ冷やし蕎麦',
+    summaryLead: '【良質な炭水化物と風味をプラス】',
+    summary:
+      '長芋の良質な炭水化物（C）を足すことで女性に嬉しいPFCバランスに近づけ、ごま油で風味と腹持ち（F）をプラス。ネバネバ成分で喉越しがさらに良くなり、プロテイン麺の食感を活かしながらツルッと美味しく食べられます。',
+    minutesBase: 8, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'オクラ', v: '2〜3本' },
+      { k: '長芋（または山芋）', v: '約40g' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1' },
+      { k: 'ごま油', v: '小さじ1' },
+    ],
+    steps: [
+      '長芋はすりおろす。オクラは塩揉み（分量外）して産毛とガクを取っておく。',
+      'プロテインモンスターSOVAを{boil}分茹でる。茹で上がる1分前にオクラを同じ鍋に入れてサッと茹で、一緒にザルにあけて冷水でしっかりと締める。',
+      '水気をよく切った麺を器に盛り、すりおろした長芋と、輪切りにしたオクラを乗せ、めんつゆとごま油を回しかける。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 281, protein: 22.5, fat: 6.2, carb: 33.2, fiber: 4.6, salt: 2.9 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S03', no: 3, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'すだち（レモン）おろし冷やかけ蕎麦',
+    summaryLead: '【脂質とコクをプラス】',
+    summary:
+      'さっぱりとした柑橘と大根おろしの組み合わせに、天かすを加えることで不足しがちな脂質（F）をカバー。女性に嬉しいPFCバランスに近づけつつ、腹持ちとコクをアップさせて満足感のある一皿に仕上げます。',
+    minutesBase: 6, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: '大根おろし', v: '約50g（軽く水気を切る）' },
+      { k: 'すだち（またはレモン）', v: '1/2個' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1（水大さじ3〜4で割る）' },
+      { k: '天かす', v: '大さじ1' },
+    ],
+    steps: [
+      '大根はすりおろし、軽く水気を切っておく。すだち（またはレモン）は薄い輪切りにする。',
+      'プロテインモンスターSOVAを{boil}分茹で、ザルにあけて冷水でしっかりと締める。',
+      '水気をよく切った麺を器に盛り、大根おろしとすだちを乗せる。冷水で割っためんつゆをかけ、最後に天かすを散らす。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 270, protein: 22, fat: 7.1, carb: 31.2, fiber: 3.9, salt: 2.4 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S04', no: 4, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'なすと生姜のポン酢ごま油和え蕎麦',
+    summaryLead: '【脂質と旨味をプラス】',
+    summary:
+      'レンジで加熱したなす（C）がごま油（F）をしっかり吸い込み、麺単体では足りない脂質と旨味を補完します。女性に嬉しいPFCバランスに近づけつつ、ポン酢と生姜でさっぱりといただける夏に嬉しい一皿です。',
+    minutesBase: 7, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'なす', v: '1/2本（約70g）' },
+      { k: 'おろし生姜', v: '小さじ1' },
+      { k: 'ポン酢', v: '大さじ1' },
+      { k: 'ごま油', v: '小さじ1' },
+    ],
+    steps: [
+      'なすは一口大の乱切りにする。耐熱容器に入れてふんわりラップをしラップで包んで電子レンジ（600W）で約2分加熱する。そのまま冷水に入れて冷やしてから乱切りにする。',
+      'プロテインモンスターSOVAを{boil}分茹で、ザルにあけて冷水でしっかりと締める。',
+      '水気をよく切った麺と、1のなす、おろし生姜、ポン酢、ごま油をボウルに入れてよく和える。器に盛り付けて完成。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 239, protein: 22, fat: 6.2, carb: 27.2, fiber: 4.7, salt: 2.4 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S05', no: 5, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'ごま油香る きのことネギの温蕎麦',
+    summaryLead: '【食物繊維と風味をプラス】 きのこをたっぷり加えることで、女性に嬉しい食物繊維（C）をしっかりかさ増し。麺単体では不足しがちな脂質を、ごま油の豊かな風味（F）で補うことで、温かいお蕎麦に深いコクと満足感を与えます。',
+    summary:
+      '',
+    minutesBase: 6, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'しめじ（お好みのきのこ）', v: '約30g' },
+      { k: '刻みネギ', v: '適量' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: '水', v: '約200ml（かけつゆ用）' },
+    ],
+    steps: [
+      'しめじは石づきを取ってほぐしておく。',
+      '小鍋に水とめんつゆ、しめじを入れて中火にかけ、きのこに火が通るまでサッと煮る。（※電子レンジで加熱してもOKです）',
+      'プロテインモンスターSOVAを{boil}分茹で、しっかりとお湯を切る。',
+      '湯切りした麺を器に盛り、2の温かい汁をかける。ネギを乗せ、仕上げにごま油をひと回しする。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 248, protein: 22, fat: 6.2, carb: 29.2, fiber: 4.6, salt: 2.9 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S06', no: 6, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'とろろ昆布と梅干しのさっぱり温蕎麦',
+    summaryLead: '【包丁不要で旨味をプラス】',
+    summary:
+      '包丁不要の超時短レシピです。とろろ昆布の良質な炭水化物（C）で旨味を足し、たっぷりの白ごま（F）で脂質と香ばしさをプラス。梅干しの酸味でさっぱりといただける、忙しい時にも嬉しい温かいお蕎麦です。',
+    minutesBase: 5, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'とろろ昆布', v: 'ひとつまみ（約2g）' },
+      { k: '梅干し', v: '1個' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1' },
+      { k: '白ごま', v: '小さじ1' },
+      { k: 'お湯（かけつゆ用）', v: '約200ml' },
+    ],
+    steps: [
+      'プロテインモンスターSOVAを{boil}分茹で、しっかりとお湯を切る。',
+      '麺を茹でている間に、器にめんつゆ、とろろ昆布、梅干しを入れ、お湯を注いで温かい汁を作っておく。',
+      '湯切りした熱々の麺を2の器に入れ、仕上げにとろろ昆布と梅干しをのせて白ごまをたっぷりと振る。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 229, protein: 22, fat: 4.1, carb: 28.2, fiber: 4.2, salt: 4.7 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S07', no: 7, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'キャベツと塩昆布の旨ごま油まぜ蕎麦',
+    summaryLead: '【食物繊維のボリュームと風味をプラス】',
+    summary:
+      'キャベツで女性に嬉しい炭水化物（C・食物繊維）のボリュームを出し、ごま油（F）でコーティングすることで麺のパサつきを完全に消軽減します。塩昆布の旨味で箸が止まらない、手軽な汁なし和え蕎麦です。',
+    minutesBase: 6, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'キャベツ', v: '1枚（約50g）' },
+      { k: '塩昆布', v: 'ひとつまみ（約5g）' },
+      { k: 'ごま油', v: '小さじ1' },
+      { k: '白ごま', v: '小さじ1' },
+    ],
+    steps: [
+      'キャベツは手で一口大にちぎっておく。',
+      'プロテインモンスターSOVAを{boil}分茹でる。茹で上がる1分前に、ちぎったキャベツを同じ鍋に入れて一緒に茹でる。',
+      '麺とキャベツをザルにあけ、しっかりとお湯を切る。',
+      '器に盛り付け、塩昆布、ごま油、白ごまを加えて全体をよく和える。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 256, protein: 22, fat: 8.1, carb: 26.2, fiber: 4.7, salt: 2.7 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S08', no: 8, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'たっぷりわかめとラー油の温蕎麦',
+    summaryLead: '【ミネラルとジャンクな風味をプラス】',
+    summary:
+      'わかめで女性に嬉しいミネラルと満腹感（C・食物繊維）をしっかり補給し、すりごまとラー油（F）で脂質とジャンクな風味をプラスします。満足感が非常に高いにもかかわらずカロリーは低く抑えられる、ダイエット中にも嬉しい温かいお蕎麦です。',
+    minutesBase: 5, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: '乾燥わかめ', v: '大さじ1（約2g）' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1' },
+      { k: 'ラー油', v: '小さじ1' },
+      { k: 'すりごま', v: '大さじ1' },
+      { k: 'お湯（かけつゆ用）', v: '約200ml' },
+    ],
+    steps: [
+      'プロテインモンスターSOVAを{boil}分茹で、しっかりとお湯を切る。',
+      '麺を茹でている間に、器にめんつゆとお湯を入れ、乾燥わかめを直接入れて戻しておく。',
+      '湯切りした熱々の麺を2の器に入れ、すりごまを振りかけ、仕上げにラー油をお好みの量かける。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 242, protein: 22, fat: 6.1, carb: 27.2, fiber: 4.5, salt: 3.3 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S09', no: 9, sku: 'sova',
+    label: '', labelAccent: '',
+    title: 'アボカドと海苔のわさび醤油和え蕎麦',
+    summaryLead: '【美容に良い脂質と和風テイストをプラス】',
+    summary:
+      'アボカドとオリーブオイルの「美容に良い脂質（F）」をしっかり摂りつつ、わさび醤油と海苔の風味で和風テイストにまとめた女性向けレシピです。温冷どちらでも美味しく、プロテイン麺の食感によく合います。',
+    minutesBase: 6, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: 'アボカド', v: '1/4個（約35g）' },
+      { k: '焼き海苔', v: '1/2枚' },
+      { k: 'わさび（チューブ）', v: '小さじ1/2' },
+      { k: '醤油', v: '大さじ1/2' },
+      { k: 'オリーブオイル', v: '小さじ1' },
+    ],
+    steps: [
+      'アボカドは食べやすい角切りにする。小鉢に醤油とわさびを入れ、よく混ぜ合わせておく。',
+      'プロテインモンスターSOVAを{boil}分茹でる。ザルにあけ、しっかりとお湯を切る。（※冷製で食べる場合は、ここで冷水で締めて水気を切る）ボウルに麺とわさび醤油を入れてよく和える。',
+      '器に麺を盛り付け、アボカドと手でちぎった焼き海苔を乗せる。最後に1のわさび醤油と、オリーブオイルを全体に回しかける。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 291, protein: 23.9, fat: 12.4, carb: 24.6, fiber: 6.3, salt: 2.6 },
+    photos: { hero: '', ingredients: '' }
+  },
+  {
+    key: 'S10', no: 10, sku: 'sova',
+    label: '', labelAccent: '',
+    title: '大根おろしとネギのたぬき温蕎麦',
+    summaryLead: '【消化を助ける炭水化物と脂質をプラス】',
+    summary:
+      '大根おろし（C）が消化を助け、天かす（F）でPFCバランスの脂質目標をしっかりと満たします。定番の組み合わせによる安心感があり、お腹の中からホッと温まる、胃腸にも優しい一品です。',
+    minutesBase: 6, boilBase: 5,
+    ingredients: [
+      { k: 'プロテインモンスターSOVA', v: '1束（50g）' },
+      { k: '大根おろし', v: '約50g（軽く水気を切る）' },
+      { k: '刻みネギ', v: '適量' },
+      { k: '天かす', v: '大さじ1' },
+      { k: 'めんつゆ（3倍濃縮）', v: '大さじ1' },
+      { k: 'お湯（かけつゆ用）', v: '約200ml' },
+      { k: '一味か七味唐辛子', v: '適量' },
+    ],
+    steps: [
+      '大根はすりおろし、軽く水気を切っておく。',
+      'プロテインモンスターSOVAを{boil}分茹で、ザルにあけてしっかりとお湯を切る。',
+      '器にめんつゆとお湯を入れて温かい汁を作り、湯切りした麺を入れる。',
+      'たっぷりの大根おろし、ネギ、天かす、一味唐辛子をトッピングして完成。',
+    ],
+    // 1皿ぶんの推定値。麺だけの分析値ではないので、必ず「推定値」と併記する。
+    nutrition: { kcal: 273, protein: 22, fat: 7.1, carb: 32.2, fiber: 4.2, salt: 3.2 },
+    photos: { hero: '', ingredients: '' }
+  },
+];
+
+/** ④の締めスライドの文言。全レシピ共通なので1か所にまとめる。 */
+const OUTRO = {
+  headingEn: 'THANK YOU FOR READING',
+  headingJa: 'ご覧いただきありがとうございます！',
+  box: [
+    'プロテインモンスター公式アカウントでは',
+    'レシピ・キャンペーン情報、',
+    'カラダにまつわるコンテンツなどを発信していきます！'
+  ],
+  cta: 'この投稿が気に入ったら保存をタップ！'
+};
+
+/** ①の下部に置く誘導帯。 */
+const SWIPE_BAR = 'スワイプでレシピをチェック ▶▶▶';
+
+const getRecipe = (key) => RECIPES.find((r) => r.key === key) || null;
+
+/**
+ * 原稿のレシピを、表示に使える形に整える。
+ *   ・手順の {boil} を商品のゆで時間（3〜5）に差し替える
+ *   ・調理時間を、ゆで時間の上限で換算する
+ * 画像・キャプションはどちらもこの結果を使うので、両者がずれることがない。
+ */
+function resolveRecipe(recipe, product) {
+  const [, boilMax] = product.boilRange;
+  const boilText = product.boilMin;              // 例 '3〜5'
+  const minutes = recipe.minutesBase - recipe.boilBase + boilMax;
+  return {
+    ...recipe,
+    minutes,
+    boilText,
+    steps: recipe.steps.map((s) => s.replace(/\{boil\}/g, boilText))
+  };
+}
+
+  return {
+    "RECIPES": RECIPES,
+    "OUTRO": OUTRO,
+    "SWIPE_BAR": SWIPE_BAR,
+    "getRecipe": getRecipe,
+    "resolveRecipe": resolveRecipe
+  };
+});
+__def("app.js", function (__req) {
+// ダッシュボード本体
+const { generateDailyPlan, jstDateKey, buildProposal } = __req("engine.js");
+const { checkCompliance } = __req("compliance.js");
+const { PRODUCTS, COMMON, COMPARISONS, DATA_NOTES } = __req("data/products.js");
+const { TAG_VOCAB, DRIVE_FOLDER_URL, IMAGE_CATALOG } = __req("data/images.js");
+const lib = __req("library.js");
+const composer = __req("composer.js");
+const { HASHTAGS } = __req("data/copy.js");
+const backend = __req("backend.js");
+
+// レシピ機能は後から読み込む。静的 import にすると、レシピ関連のファイルが
+// 1つ欠けただけでモジュール全体が読めず、ダッシュボードが真っ白になってしまう。
+let recipeArt = null;
+let recipeData = null;
+let recipeLoadError = null;
+
+async function loadRecipeModules() {
+  try {
+    recipeArt = await Promise.resolve(__req("recipe.js"));
+    recipeData = await Promise.resolve(__req("data/recipes.js"));
+  } catch (err) {
+    recipeLoadError = err;
+    console.warn('レシピ機能を読み込めませんでした:', err);
+  }
+}
+
+/* ============================ 状態 ============================ */
+
+const LS = {
+  settings: 'pm-sns:settings',
+  edits: 'pm-sns:edits',
+  log: 'pm-sns:log',
+  recipe: 'pm-sns:recipe',
+  sku: 'pm-sns:sku'
+};
+
+const defaultSettings = {
+  accent: '#f0821e', // ブランドのオレンジ
+  igAspect: '4:5',
+  xAspect: '16:9',
+  prMode: false,
+  // Instagram と X を「同じ投稿の媒体別バージョン」として作るか。
+  // オフにすると、それぞれ独立した内容になる。
+  syncPlatforms: true
+};
+
+// 共有モード（Apps Script 上）では、共有側にある値を優先して読む。
+// 端末モードではこれまで通り localStorage だけを見る。
+const load = (k, fb) => {
+  if (backend.isShared) {
+    const shared = backend.getDoc(k);
+    if (shared && typeof shared === 'object') return { ...fb, ...shared };
+    return { ...fb };
+  }
+  try { return { ...fb, ...JSON.parse(localStorage.getItem(k) || '{}') }; }
+  catch { return { ...fb }; }
+};
+
+const save = (k, v) => {
+  if (backend.isShared) {
+    backend.putDoc(k, v);
+    return;
+  }
+  localStorage.setItem(k, JSON.stringify(v));
+};
+
+/** 共有側から読み直した内容を、画面の状態に取り込む */
+function adoptSharedState() {
+  settings = { ...defaultSettings, ...load(LS.settings, defaultSettings) };
+  edits = load(LS.edits, {});
+  postLog = load(LS.log, { entries: [] });
+  if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
+  recipeState = load(LS.recipe, { key: null, heroKey: '', captions: {} });
+  if (!recipeState.captions) recipeState.captions = {};
+  skuOverrides = load(LS.sku, {});
+}
+
+let settings = load(LS.settings, defaultSettings);
+// 初期のアクセントカラーは黄緑だったが、ブランドカラーはオレンジだった。
+// 既存の保存値が旧既定値そのままなら、ブランドカラーへ寄せる（自分で変えた色は尊重する）。
+if (settings.accent === '#d7ff3e') {
+  settings.accent = defaultSettings.accent;
+  save(LS.settings, settings);
+}
+let edits = load(LS.edits, {});
+let postLog = load(LS.log, { entries: [] });
+if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
+
+// レシピ画面の状態。選んだレシピ・写真・編集したキャプションを覚えておく。
+let recipeState = load(LS.recipe, { key: null, heroKey: '', captions: {} });
+if (!recipeState.captions) recipeState.captions = {};
+
+let dateKey = jstDateKey();
+let variants = { ig: 0, x: 0 };
+let stored = [];
+// 日付・媒体ごとの SKU 指定。variant を含めないので「別案」を出しても指定は残る。
+let skuOverrides = load(LS.sku, {});
+// 支給ロゴ。描き起こさず、登録されたファイルをそのまま合成に使う。
+let logos = { onPhoto: null, onLight: null, hasOnPhoto: false, hasOnLight: false };
+
+/* ============================ 小道具 ============================ */
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.hidden = true; }, 2200);
+}
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (v !== null && v !== false && v !== undefined) node.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c === null || c === undefined || c === false) continue;
+    node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('コピーしました');
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    toast('コピーしました');
+  }
+}
+
+/** 編集済みの内容をマージした投稿案を返す */
+function withEdits(post) {
+  const e = edits[post.id];
+  if (!e) return post;
+  const merged = { ...post, image: { ...post.image } };
+  if (e.caption !== undefined) merged.caption = e.caption;
+  if (e.hashtags !== undefined) merged.hashtags = e.hashtags;
+  if (e.mode) merged.image.mode = e.mode;
+  if (e.overlay !== undefined) merged.image.overlay = e.overlay;
+  if (e.imageKey !== undefined) merged.imageKey = e.imageKey;
+  if (e.aspect) merged.image.aspect = e.aspect;
+  merged.fullText = `${merged.caption}\n\n${merged.hashtags.join(' ')}`;
+  merged.charCount = [...merged.fullText].length;
+  merged.compliance = checkCompliance(merged.fullText, { includeOptional: settings.prMode });
+  return merged;
+}
+
+function patchEdit(postId, patch) {
+  edits[postId] = { ...(edits[postId] || {}), ...patch };
+  save(LS.edits, edits);
+}
+
+/** canvas の中身を別ウインドウで等倍表示する */
+async function openFullSize(canvas) {
+  const blob = await composer.toBlob(canvas, 'image/png');
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) {
+    toast('ポップアップがブロックされました。許可してください');
+    URL.revokeObjectURL(url);
+    return;
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/** 画像に載せる文字を1本の文字列にまとめる（法令チェックにかけるため） */
+function overlayText(ov) {
+  if (!ov) return '';
+  return [ov.eyebrow, ov.lead, ov.big, ov.suffix, ov.sub,
+    ...(ov.chips || []).map((c) => `${c.k}${c.v}`)]
+    .filter(Boolean).join(' ');
+}
+
+/* ============================ 直近の使用状況 ============================ */
+//
+// 投稿ログを見て「最近使った写真・最近使った書き出し」を避ける。
+// これがないと、写真の枚数が少ないうちは同じ絵が短期間で何度も出てしまう。
+
+const RECENT_IMAGE_DAYS = 14;
+const RECENT_HOOK_DAYS = 30;
+
+const daysAgo = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000;
+
+/** 直近に使った画像キー（新しい順） */
+function recentImageKeys(days = RECENT_IMAGE_DAYS) {
+  return postLog.entries
+    .filter((e) => e.image && daysAgo(e.postedAt) <= days)
+    .map((e) => e.image);
+}
+
+/** 画像ごとの使用回数と最終使用日 */
+function imageUsage() {
+  const map = new Map();
+  for (const e of postLog.entries) {
+    if (!e.image) continue;
+    const cur = map.get(e.image) || { count: 0, lastAt: null };
+    cur.count++;
+    if (!cur.lastAt || e.postedAt > cur.lastAt) cur.lastAt = e.postedAt;
+    map.set(e.image, cur);
+  }
+  return map;
+}
+
+/** 同じ書き出しを直近に使っていないか */
+function recentHookUse(firstLine, days = RECENT_HOOK_DAYS) {
+  if (!firstLine) return null;
+  return postLog.entries.find(
+    (e) => daysAgo(e.postedAt) <= days && e.text.split('\n')[0].trim() === firstLine.trim()
+  ) || null;
+}
+
+/* ============================ 提案ビュー ============================ */
+
+const X_SAFE = 140;
+const IG_MAX = 2200;
+
+/* --- SKU の指定 ---
+   投稿は必ずどちらか一方の商品に特化させる。既定は日付から自動で決まるが、
+   ここで指定すると、訴求軸・テンプレート・画像プランはそのままに商品だけが
+   入れ替わる。指定は日付＋媒体に紐づけるので「別案」を出しても残る。 */
+
+const skuKeyOf = (platform) => `${dateKey}-${platform}`;
+
+function forcedSkus() {
+  return { ig: skuOverrides[skuKeyOf('ig')] || null, x: skuOverrides[skuKeyOf('x')] || null };
+}
+
+/**
+ * SKU を切り替える。本文はその商品の数値で作り直すので、
+ * 手で直した本文・タグ・画像の文字が残っていると噛み合わなくなる。
+ * 残っている場合だけ確認したうえで捨てる。
+ */
+function setSku(post, skuId) {
+  const sync = settings.syncPlatforms;
+  const targets = sync ? ['ig', 'x'] : [post.platform];
+
+  const dirty = targets.some((pf) => {
+    const e = edits[`${dateKey}-${pf}-${variants[pf] || 0}`];
+    return e && (e.caption !== undefined || e.hashtags !== undefined || e.overlay !== undefined);
+  });
+  if (dirty && !confirm('手を入れた本文・タグ・画像の文字は、商品に合わせて作り直すため破棄されます。切り替えますか？')) {
+    return;
+  }
+
+  for (const pf of targets) {
+    if (skuId) skuOverrides[skuKeyOf(pf)] = skuId;
+    else delete skuOverrides[skuKeyOf(pf)];
+    // 商品が変わると本文の数値も写真の相性も変わるので、その媒体の編集内容を戻す
+    const id = `${dateKey}-${pf}-${variants[pf] || 0}`;
+    if (edits[id]) {
+      const { caption, hashtags, overlay, imageKey, ...keep } = edits[id];
+      edits[id] = keep;
+    }
+  }
+  save(LS.sku, skuOverrides);
+  save(LS.edits, edits);
+  refresh();
+}
+
+async function renderProposals() {
+  const list = $('#proposal-list');
+  list.replaceChildren();
+  $('#no-images-notice').hidden = stored.length > 0;
+
+  const sync = settings.syncPlatforms;
+  const plan = generateDailyPlan(dateKey, variants, { sync, forceSku: forcedSkus() });
+  // 直近に投稿した写真は避ける。候補が尽きた場合は pickImage が全体から
+  // 選び直すので、行き止まりにはならない。
+  const usedKeys = recentImageKeys();
+
+  // まず両方の画像を確定させる。カード側の「別の写真」が相手と衝突しないよう、
+  // 決まった組み合わせを両方のカードに渡す必要がある。
+  const assigned = [];
+  for (const raw of plan.posts) {
+    const post = withEdits(raw);
+    let imageItem = null;
+    if (post.imageKey) {
+      imageItem = stored.find((s) => s.key === post.imageKey) || null;
+    } else if (sync && assigned.length && assigned[0].imageItem) {
+      // 媒体をそろえる設定では「同じ投稿」なので、写真も1枚目に合わせる。
+      imageItem = assigned[0].imageItem;
+    }
+    if (!imageItem && stored.length) {
+      imageItem = lib.pickImage(stored, post.image, post.id, usedKeys);
+    }
+    if (imageItem && !usedKeys.includes(imageItem.key)) usedKeys.push(imageItem.key);
+    assigned.push({ post, imageItem });
+  }
+
+  for (const { post, imageItem } of assigned) {
+    // そろえる設定では写真の一致は正しい状態なので、重複として扱わない。
+    const siblingKeys = sync ? [] : assigned
+      .filter((a) => a.post.id !== post.id && a.imageItem)
+      .map((a) => a.imageItem.key);
+    list.append(buildPostCard(post, imageItem, siblingKeys));
+  }
+}
+
+function buildPostCard(post, imageItem, siblingKeys = []) {
+  const platformLabel = post.platform === 'ig' ? 'Instagram フィード' : 'X';
+  const limit = post.platform === 'ig' ? IG_MAX : X_SAFE;
+  const isComposite = post.image.mode === 'composite';
+  const posted = postLog.entries.find((e) => e.postId === post.id);
+
+  const card = el('div', { class: 'post-card' });
+
+  // 直近に同じ書き出し・同じ写真を使っていないかを見て、注意を出す
+  const hookDup = recentHookUse(post.caption.split('\n')[0]);
+  const usage = imageUsage().get(imageItem ? imageItem.key : '');
+  const imageDup = usage && daysAgo(usage.lastAt) <= RECENT_IMAGE_DAYS;
+  const sameAsSibling = imageItem && siblingKeys.includes(imageItem.key);
+
+  /* --- ヘッダ --- */
+  card.append(
+    el('div', { class: 'post-head' },
+      el('div', { class: `platform ${post.platform}` }, el('span', { class: 'dot' }), platformLabel),
+      el('div', { class: 'chips' },
+        el('span', { class: 'chip accent' }, post.axisLabel),
+        el('span', { class: 'chip' }, post.skuLabel),
+        el('span', { class: 'chip' }, isComposite ? '写真＋文字合成' : '写真そのまま'),
+        posted ? el('span', { class: 'chip accent' }, '投稿済み') : null,
+        hookDup ? el('span', { class: 'chip dup' }, `書き出し重複（${hookDup.dateKey}）`) : null,
+        imageDup ? el('span', { class: 'chip dup' }, `この写真は${Math.round(daysAgo(usage.lastAt))}日前にも使用`) : null,
+        sameAsSibling ? el('span', { class: 'chip dup' }, 'もう1本と同じ写真') : null
+      )
+    )
+  );
+
+  /* --- プレビュー --- */
+  const canvasBox = el('div', { class: 'canvas-box' });
+  const canvas = el('canvas');
+  if (imageItem) {
+    canvas.classList.add('zoomable');
+    canvas.title = 'クリックで別ウインドウに拡大表示';
+    canvas.addEventListener('click', () => openFullSize(canvas));
+    canvasBox.append(canvas);
+  }
+  else canvasBox.append(el('div', { class: 'canvas-empty' }, '画像が未取込です。ライブラリに画像を追加してください。'));
+
+  // 既定は設定タブの値。個別に変えたぶんだけ post.image.aspect に残る。
+  const aspect = post.image.aspect || (post.platform === 'ig' ? settings.igAspect : settings.xAspect);
+  const overlay = post.image.overlay;
+
+  const redraw = async () => {
+    if (!imageItem) return;
+    const blob = await lib.blobOf(imageItem);
+    if (!blob) return;
+    const bmp = await composer.loadBitmap(blob);
+    await composer.render(canvas, bmp, {
+      aspect,
+      overlay: isComposite ? post.image.overlay : null,
+      accent: settings.accent,
+      logo: logos.onPhoto
+    });
+  };
+  redraw();
+
+  const imgSelect = el('select', {
+    onchange: (e) => { patchEdit(post.id, { imageKey: e.target.value }); refresh(); }
+  },
+    ...stored.map((s) => el('option', {
+      value: s.key,
+      selected: imageItem && s.key === imageItem.key ? 'selected' : null
+    }, s.key))
+  );
+  if (!stored.length) imgSelect.append(el('option', {}, '（画像なし）'));
+
+  /** どちらの商品で作るか。切り替えると本文も画像の文字も作り直される。 */
+  function buildSkuPicker() {
+    const forced = skuOverrides[skuKeyOf(post.platform)] || null;
+    const btn = (id, label) => el('button', {
+      class: `btn small ${post.sku === id ? '' : 'ghost'}`,
+      onclick: () => setSku(post, id)
+    }, label);
+    return el('div', { class: 'sku-picker' },
+      el('span', { class: 'sku-label' }, '商品'),
+      btn('monster', 'モンスター'),
+      btn('sova', 'ソバ'),
+      forced
+        ? el('button', { class: 'btn ghost small', onclick: () => setSku(post, null) }, '自動に戻す')
+        : el('span', { class: 'hint' }, '自動（日付で決定）'),
+      settings.syncPlatforms
+        ? el('span', { class: 'hint' }, '※2媒体そろえる設定のため、両方に反映されます')
+        : null
+    );
+  }
+
+  const controls = el('div', { class: 'img-controls' },
+    buildSkuPicker(),
+    el('div', { class: 'img-meta' }, imageItem ? imageItem.key : '—'),
+    imgSelect,
+    el('div', { class: 'row' },
+      el('button', {
+        class: 'btn ghost small',
+        onclick: () => { patchEdit(post.id, { mode: isComposite ? 'raw' : 'composite' }); refresh(); }
+      }, isComposite ? '文字なしにする' : '文字を載せる'),
+      el('button', {
+        class: 'btn ghost small',
+        onclick: () => {
+          // 同じ条件で別の写真へ。もう1本が使っている写真は飛ばす。
+          if (!stored.length) return;
+          let i = imageItem ? stored.findIndex((s) => s.key === imageItem.key) : -1;
+          for (let step = 1; step <= stored.length; step++) {
+            const cand = stored[(i + step + stored.length) % stored.length];
+            if (!siblingKeys.includes(cand.key) || stored.length <= 1) {
+              patchEdit(post.id, { imageKey: cand.key });
+              break;
+            }
+          }
+          refresh();
+        }
+      }, '別の写真'),
+      el('select', {
+        onchange: (e) => { patchEdit(post.id, { aspect: e.target.value }); refresh(); }
+      }, ...Object.entries(composer.ASPECTS).map(([k, v]) =>
+        el('option', { value: k, selected: k === aspect ? 'selected' : null }, v.label)))
+    ),
+    isComposite && overlay ? buildOverlayEditor() : null
+  );
+
+  /** 画像に載せる文字の編集欄。テンプレートごとに使う項目が違う。 */
+  function buildOverlayEditor() {
+    const patchOverlay = (patch) => {
+      const ov = { ...post.image.overlay, ...patch };
+      patchEdit(post.id, { overlay: ov });
+      post.image.overlay = ov;
+      redraw();
+      renderOverlayCompliance();
+    };
+
+    const field = (key, placeholder, multiline = false) =>
+      el(multiline ? 'textarea' : 'input', {
+        ...(multiline ? { rows: 2 } : { type: 'text' }),
+        placeholder,
+        oninput: (e) => patchOverlay({ [key]: e.target.value })
+      });
+
+    const withValue = (node, v) => {
+      node.value = v ?? '';
+      return node;
+    };
+
+    const rows = [
+      el('div', { class: 'row' },
+        el('select', {
+          class: 'grow',
+          onchange: (e) => patchOverlay({ template: e.target.value })
+        }, ...Object.entries(composer.TEMPLATES || { hook: 'コピー主役' }).map(([k, label]) =>
+          el('option', { value: k, selected: k === (overlay.template || 'hook') ? 'selected' : null }, label))),
+        el('select', {
+          onchange: (e) => patchOverlay({ position: e.target.value })
+        }, ...Object.entries(composer.POSITIONS || { bottom: '文字を下に置く', top: '文字を上に置く' })
+          .map(([k, label]) =>
+            el('option', { value: k, selected: k === (overlay.position || 'bottom') ? 'selected' : null }, label))),
+        el('button', {
+          class: 'btn ghost small',
+          onclick: () => {
+            // 自動生成の文字に戻す
+            const e2 = edits[post.id];
+            if (e2) { delete e2.overlay; save(LS.edits, edits); }
+            refresh();
+          }
+        }, '文字を戻す')
+      ),
+      withValue(field('eyebrow', 'ラベル（オレンジの角丸）'), overlay.eyebrow)
+    ];
+
+    if ((overlay.template || 'hook') === 'stat') {
+      rows.push(withValue(field('lead', '数字の上の小見出し'), overlay.lead));
+      rows.push(withValue(field('big', '数字'), overlay.big));
+      rows.push(withValue(field('suffix', '数字の下の文字'), overlay.suffix));
+    } else {
+      rows.push(withValue(field('big', '見出し（改行できます）', true), overlay.big));
+      rows.push(withValue(field('sub', '小さい方の説明'), overlay.sub));
+    }
+
+    return el('div', { class: 'overlay-editor' }, ...rows);
+  }
+
+  card.append(el('div', { class: 'preview-wrap' }, canvasBox, controls));
+
+  /* --- キャプション編集 --- */
+  const captionArea = el('textarea', { rows: post.platform === 'ig' ? 14 : 6 });
+  captionArea.value = post.caption;
+  const tagsInput = el('input', { type: 'text', value: post.hashtags.join(' ') });
+  const counter = el('div', { class: 'counter' });
+  const compBox = el('div', { class: 'compliance' });
+  const overlayComp = el('div', { class: 'compliance', hidden: true });
+
+  const currentFull = () => `${captionArea.value}\n\n${tagsInput.value.trim()}`;
+
+  function renderCompliance() {
+    const text = currentFull();
+    const n = [...text].length;
+    counter.textContent = `${n} 文字 / 目安 ${limit}（ハッシュタグ ${tagsInput.value.trim().split(/\s+/).filter(Boolean).length}個）`;
+    counter.classList.toggle('over', n > limit);
+
+    const r = checkCompliance(text, { includeOptional: settings.prMode });
+    compBox.replaceChildren();
+    const state = r.blocks.length ? 'block' : r.warns.length ? 'warn' : 'ok';
+    const headText = r.blocks.length
+      ? `要修正 ${r.blocks.length}件（このままでは投稿できません）`
+      : r.warns.length
+        ? `要確認 ${r.warns.length}件`
+        : '薬機法・景表法チェック：問題なし';
+    compBox.append(el('div', { class: `comp-head ${state}` }, headText));
+    for (const f of [...r.blocks, ...r.warns]) {
+      compBox.append(
+        el('div', { class: 'comp-item' },
+          el('span', { class: 'law' }, `[${f.law}]`),
+          el('span', { class: 'matched' }, f.matched),
+          ' ' + f.reason,
+          el('span', { class: 'fix' }, '→ ' + f.fix)
+        )
+      );
+    }
+    postBtn.disabled = r.blocks.length > 0;
+    return r;
+  }
+
+  function renderOverlayCompliance() {
+    const ov = post.image.overlay;
+    if (!isComposite || !ov) { overlayComp.hidden = true; return; }
+    const t = overlayText(ov);
+    const r = checkCompliance(t);
+    overlayComp.replaceChildren();
+    if (r.ok && !r.warns.length) { overlayComp.hidden = true; return; }
+    overlayComp.hidden = false;
+    overlayComp.append(el('div', { class: `comp-head ${r.blocks.length ? 'block' : 'warn'}` }, '画像に載せる文字の指摘'));
+    for (const f of [...r.blocks, ...r.warns]) {
+      overlayComp.append(el('div', { class: 'comp-item' },
+        el('span', { class: 'law' }, `[${f.law}]`), el('span', { class: 'matched' }, f.matched), ' ' + f.reason));
+    }
+  }
+
+  captionArea.addEventListener('input', () => {
+    patchEdit(post.id, { caption: captionArea.value });
+    renderCompliance();
+  });
+  tagsInput.addEventListener('input', () => {
+    patchEdit(post.id, { hashtags: tagsInput.value.trim().split(/\s+/).filter(Boolean) });
+    renderCompliance();
+  });
+
+  card.append(
+    el('div', { class: 'editor' },
+      el('label', {}, 'キャプション'), captionArea,
+      el('label', {}, 'ハッシュタグ（スペース区切り）'), tagsInput,
+      counter
+    ),
+    compBox,
+    overlayComp
+  );
+
+  /* --- アクション --- */
+  const postBtn = el('button', {
+    class: 'btn',
+    onclick: async () => {
+      const r = renderCompliance();
+      if (r.blocks.length) { toast('法令チェックの指摘を解消してください'); return; }
+      if (!confirm(`${platformLabel} に投稿したものとして記録します。\n（画像とキャプションは各アプリに貼り付けてください）`)) return;
+      postLog.entries.unshift({
+        postId: post.id, dateKey: post.dateKey, platform: post.platform,
+        axis: post.axisLabel, sku: post.skuLabel,
+        text: currentFull(), image: imageItem ? imageItem.key : null,
+        postedAt: new Date().toISOString()
+      });
+      save(LS.log, postLog);
+      toast('投稿ログに記録しました');
+      refresh();
+    }
+  }, posted ? '投稿済み（再記録）' : '投稿する');
+
+  const actions = el('div', { class: 'post-actions' },
+    el('button', {
+      class: 'btn ghost',
+      onclick: () => copyText(currentFull())
+    }, 'キャプション＋タグをコピー'),
+    el('button', {
+      class: 'btn ghost',
+      disabled: imageItem ? null : 'disabled',
+      onclick: async () => {
+        if (!imageItem) return;
+        const blob = await composer.toBlob(canvas, 'image/jpeg', 0.92);
+        composer.download(blob, `${post.dateKey}_${post.platform}_${post.sku}_${post.axis}.jpg`);
+        toast('画像を書き出しました');
+      }
+    }, '画像をダウンロード'),
+    post.platform === 'x'
+      ? el('button', {
+          class: 'btn ghost',
+          onclick: () => {
+            const url = 'https://x.com/intent/post?text=' + encodeURIComponent(currentFull());
+            window.open(url, '_blank', 'noopener');
+            toast('Xの投稿画面を開きました。画像は手動で添付してください');
+          }
+        }, 'Xの下書きを開く')
+      : el('button', {
+          class: 'btn ghost',
+          onclick: () => {
+            window.open('https://www.instagram.com/', '_blank', 'noopener');
+            toast('Instagramを開きました。画像を添付し、キャプションを貼り付けてください');
+          }
+        }, 'Instagramを開く'),
+    el('button', {
+      class: 'btn ghost',
+      onclick: () => {
+        variants[post.platform] = (variants[post.platform] + 1) % 4;
+        // 別案に切り替えるときは、その案の編集内容だけをリセット対象にする
+        refresh();
+      }
+    }, '別案を出す'),
+    el('button', {
+      class: 'btn ghost',
+      onclick: () => {
+        if (!edits[post.id]) { toast('編集はありません'); return; }
+        if (!confirm('この案の編集内容を破棄して、自動生成の状態に戻します。')) return;
+        delete edits[post.id];
+        save(LS.edits, edits);
+        refresh();
+      }
+    }, '編集を破棄'),
+    postBtn
+  );
+  card.append(actions);
+
+  renderCompliance();
+  renderOverlayCompliance();
+  return card;
+}
+
+
+/* ============================ レシピ投稿 ============================ */
+
+const IG_CAPTION_MAX = 2200;
+
+/** レシピの写真候補。タグでSKUが一致するものを前に出す。 */
+function recipePhotoOptions(recipe) {
+  const tags = lib.loadTags();
+  const score = (item) => {
+    const t = tags[item.key] || [];
+    let v = 0;
+    if (t.includes(recipe.sku)) v += 3;
+    if (t.includes('both')) v += 1;
+    if (t.includes('cooked')) v += 2;
+    return -v;
+  };
+  return [...stored].sort((a, b) => score(a) - score(b) || a.key.localeCompare(b.key));
+}
+
+async function renderRecipeView() {
+  const notice = $('#recipe-notice');
+  const slidesBox = $('#recipe-slides');
+  const sel = $('#recipe-select');
+  const heroSel = $('#recipe-hero');
+  if (!notice || !slidesBox || !sel || !heroSel) return; // 画面が古い場合
+
+  if (!recipeArt || !recipeData) {
+    notice.hidden = false;
+    notice.textContent =
+      'レシピ機能のファイル（recipe.js / data/recipes.js）が読み込めませんでした。'
+      + 'この2つがアップロードされているか確認してください。'
+      + (recipeLoadError ? `（${recipeLoadError.message}）` : '');
+    slidesBox.replaceChildren();
+    return;
+  }
+
+  const { RECIPES, OUTRO, SWIPE_BAR, getRecipe, resolveRecipe } = recipeData;
+
+  if (!RECIPES.length) {
+    notice.hidden = false;
+    notice.textContent = 'レシピがまだ登録されていません。data/recipes.js に原稿を追加してください。';
+    slidesBox.replaceChildren();
+    return;
+  }
+
+  const base = getRecipe(recipeState.key) || RECIPES[0];
+  recipeState.key = base.key;
+  // ゆで時間を商品表示の「3〜5分」に差し替え、調理時間も換算した状態で扱う。
+  // 画像とキャプションが同じ数字を使うよう、ここで一度だけ解決する。
+  const product = PRODUCTS[base.sku];
+  const recipe = resolveRecipe(base, product);
+
+  // レシピの選択肢
+  sel.replaceChildren(...RECIPES.map((r) => el('option', {
+    value: r.key,
+    selected: r.key === recipe.key ? 'selected' : null
+  }, `${r.sku === 'monster' ? 'モンスター' : 'ソバ'} ${String(r.no).padStart(2, '0')}｜${r.label}${r.title.replace(/\n/g, '')}`)));
+
+  // 写真の選択肢
+  const options = recipePhotoOptions(recipe);
+  const chosenKey = recipeState.heroKey || recipe.photos.hero || (options[0] ? options[0].key : '');
+  heroSel.replaceChildren(
+    el('option', { value: '' }, options.length ? '（自動：先頭の候補）' : '（画像が未取込です）'),
+    ...options.map((o) => el('option', {
+      value: o.key, selected: o.key === chosenKey ? 'selected' : null
+    }, o.key))
+  );
+
+  notice.hidden = stored.length > 0;
+  if (!stored.length) {
+    notice.textContent = '画像ライブラリが空です。①のタイトル画像に写真を使うには、先に画像を取り込んでください。②③④は写真なしでも書き出せます。';
+  }
+
+  const heroItem = stored.find((x) => x.key === chosenKey) || null;
+  const heroBlob = heroItem ? await lib.blobOf(heroItem) : null;
+  const heroImg = heroBlob ? await composer.loadBitmap(heroBlob) : null;
+
+  // ④のサムネは、他のレシピのできあがり写真を使う
+  const thumbItems = options.filter((o) => o.key !== chosenKey).slice(0, 3);
+  const thumbs = [];
+  for (const t of thumbItems) {
+    const tb = await lib.blobOf(t);
+    if (tb) thumbs.push(await composer.loadBitmap(tb));
+  }
+
+  // 4枚を描く
+  slidesBox.replaceChildren();
+  const canvases = {};
+  for (const [slide, label] of Object.entries(recipeArt.SLIDES)) {
+    const canvas = el('canvas');
+    canvas.title = 'クリックで別ウインドウに拡大表示';
+    canvas.addEventListener('click', () => openFullSize(canvas));
+    canvases[slide] = canvas;
+    slidesBox.append(el('div', { class: 'recipe-slide' },
+      el('div', { class: 'slide-label' }, label), canvas));
+    await recipeArt.renderSlide(canvas, slide, recipe, {
+      heroImg, thumbs, accent: settings.accent, outro: OUTRO, swipeBar: SWIPE_BAR,
+      logo: logos.onLight
+    });
+  }
+
+  // キャプション
+  // ハッシュタグはレシピ寄りに。キーで決まるので毎回同じ並びになる。
+  const tags = [];
+  for (const t of [...HASHTAGS.core, ...HASHTAGS.bySku[recipe.sku],
+    ...HASHTAGS.byAxis.time, ...HASHTAGS.byAxis.diet]) {
+    if (!tags.includes(t)) tags.push(t);
+    if (tags.length >= 20) break;
+  }
+  const generated = recipeArt.buildRecipeCaption(recipe, product, tags);
+  const ta = $('#recipe-caption');
+  ta.value = recipeState.captions[recipe.key] ?? generated;
+
+  const counter = $('#recipe-counter');
+  const compBox = $('#recipe-compliance');
+
+  function renderRecipeCompliance() {
+    const text = ta.value;
+    const n = [...text].length;
+    counter.textContent = `${n} 文字 / 目安 ${IG_CAPTION_MAX}`;
+    counter.classList.toggle('over', n > IG_CAPTION_MAX);
+
+    const r = checkCompliance(text, { includeOptional: settings.prMode });
+    compBox.replaceChildren();
+    const state = r.blocks.length ? 'block' : r.warns.length ? 'warn' : 'ok';
+    compBox.append(el('div', { class: `comp-head ${state}` },
+      r.blocks.length ? `要修正 ${r.blocks.length}件`
+        : r.warns.length ? `要確認 ${r.warns.length}件`
+          : '薬機法・景表法チェック：問題なし'));
+    for (const f of [...r.blocks, ...r.warns]) {
+      compBox.append(el('div', { class: 'comp-item' },
+        el('span', { class: 'law' }, `[${f.law}]`),
+        el('span', { class: 'matched' }, f.matched),
+        ' ' + f.reason,
+        el('span', { class: 'fix' }, '→ ' + f.fix)));
+    }
+    $('#recipe-download').disabled = r.blocks.length > 0;
+  }
+
+  ta.oninput = () => {
+    recipeState.captions[recipe.key] = ta.value;
+    save(LS.recipe, recipeState);
+    renderRecipeCompliance();
+  };
+  renderRecipeCompliance();
+
+  sel.onchange = (e) => {
+    recipeState.key = e.target.value;
+    recipeState.heroKey = '';
+    save(LS.recipe, recipeState);
+    renderRecipeView();
+  };
+  heroSel.onchange = (e) => {
+    recipeState.heroKey = e.target.value;
+    save(LS.recipe, recipeState);
+    renderRecipeView();
+  };
+  $('#recipe-copy').onclick = () => copyText(ta.value);
+  $('#recipe-reset').onclick = () => {
+    delete recipeState.captions[recipe.key];
+    save(LS.recipe, recipeState);
+    renderRecipeView();
+  };
+  $('#recipe-download').onclick = async () => {
+    const order = ['title', 'ingredients', 'steps', 'outro'];
+    for (let i = 0; i < order.length; i++) {
+      const blob = await composer.toBlob(canvases[order[i]], 'image/jpeg', 0.94);
+      composer.download(blob, `${recipe.key}_${i + 1}_${order[i]}.jpg`);
+      // 連続ダウンロードはブラウザに嫌われることがあるので、少し間を置く
+      await new Promise((res) => setTimeout(res, 350));
+    }
+    toast('4枚を書き出しました。1→4の順に並べて投稿してください');
+  };
+}
+
+/* ============================ 画像ライブラリ ============================ */
+
+let libFilter = 'all';
+
+async function renderLibrary() {
+  const rows = await lib.catalogStatus();
+  const grid = $('#lib-grid');
+  grid.replaceChildren();
+  const usage = imageUsage();
+
+  const storedCount = rows.filter((r) => r.stored).length;
+  const taggedCount = rows.filter((r) => r.stored && r.tags.length).length;
+  const unusedCount = rows.filter((r) => r.stored && !usage.has(r.file)).length;
+  $('#lib-stats').textContent =
+    `カタログ ${IMAGE_CATALOG.length}点／取込済み ${storedCount}点／タグ付き ${taggedCount}点／未使用 ${unusedCount}点`;
+  $('#lib-badge').textContent = String(storedCount);
+
+  const filtered = rows.filter((r) => {
+    if (libFilter === 'stored') return !!r.stored;
+    if (libFilter === 'missing') return !r.stored;
+    if (libFilter === 'untagged') return r.stored && r.tags.length === 0;
+    if (libFilter === 'unused') return r.stored && !usage.has(r.file);
+    return true;
+  });
+
+  for (const r of filtered) {
+    const thumb = el('div', { class: 'lib-thumb' });
+    if (r.stored) {
+      const url = URL.createObjectURL(await lib.blobOf(r.stored));
+      thumb.append(el('img', { src: url, alt: r.file, loading: 'lazy' }));
+    } else if (r.thumbUrl) {
+      const img = el('img', { src: r.thumbUrl, alt: r.file, loading: 'lazy', referrerpolicy: 'no-referrer' });
+      img.onerror = () => { img.remove(); thumb.append(el('div', {}, 'プレビュー不可')); };
+      thumb.append(img);
+    } else {
+      thumb.append(el('div', {}, '未取込'));
+    }
+    thumb.append(el('span', { class: `lib-status ${r.stored ? 'stored' : 'missing'}` }, r.stored ? '取込済み' : '未取込'));
+
+    // 使用回数。0回のものが一目でわかるようにして、写真の使い回しを避ける。
+    const u = usage.get(r.file);
+    if (r.stored) {
+      thumb.append(el('span', { class: `lib-uses ${u ? '' : 'unused'}` },
+        u ? `${u.count}回使用` : '未使用'));
+    }
+
+    const body = el('div', { class: 'lib-body' }, el('div', { class: 'lib-name' }, r.file));
+
+    for (const [group, label] of [['sku', '商品'], ['scene', 'シーン'], ['space', '文字を載せる余白']]) {
+      const tagList = el('div', { class: 'tag-list' });
+      for (const t of TAG_VOCAB[group]) {
+        tagList.append(el('span', {
+          class: `tag ${r.tags.includes(t.id) ? 'on' : ''}`,
+          onclick: (ev) => {
+            lib.toggleTag(r.file, t.id);
+            ev.target.classList.toggle('on');
+            renderProposals();
+          }
+        }, t.label));
+      }
+      body.append(el('div', { class: 'tag-group' },
+        el('div', { class: 'tag-group-label' }, label), tagList));
+    }
+
+    if (r.viewUrl) {
+      body.append(el('a', { href: r.viewUrl, target: '_blank', rel: 'noopener', class: 'lib-name' }, 'Drive で開く →'));
+    }
+
+    grid.append(el('div', { class: 'lib-item' }, thumb, body));
+  }
+}
+
+/**
+ * 重複を知らせて、どうするか選んでもらう。
+ * 戻り値は 'overwrite' | 'skip' | 'cancel'。
+ */
+function askAboutDuplicates(duplicates, freshCount) {
+  const back = $('#dup-modal');
+  const names = duplicates.map((d) => d.key);
+  $('#dup-lead').textContent =
+    `選んだファイルのうち ${duplicates.length}点が、すでにライブラリにある画像と同じ名前です`
+    + (freshCount ? `（残り ${freshCount}点は新規）。` : '。');
+  $('#dup-list').textContent = names.join('\n');
+  back.hidden = false;
+
+  return new Promise((resolve) => {
+    const done = (choice) => {
+      back.hidden = true;
+      document.removeEventListener('keydown', onKey);
+      resolve(choice);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') done('cancel'); };
+    document.addEventListener('keydown', onKey);
+    $('#dup-overwrite').onclick = () => done('overwrite');
+    $('#dup-skip').onclick = () => done('skip');
+    $('#dup-cancel').onclick = () => done('cancel');
+    $('#dup-copy').onclick = () => copyText(names.join('\n'));
+    back.onclick = (e) => { if (e.target === back) done('cancel'); };
+    $('#dup-overwrite').focus();
+  });
+}
+
+function setupDropzone() {
+  const dz = $('#dropzone');
+  const onFiles = async (files) => {
+    if (!files || !files.length) return;
+
+    // 黙って上書きすると元の画像が消えるので、先に名前の衝突を調べる
+    const { duplicates, fresh, skipped } = await lib.inspectFiles(files);
+    let overwrite = true;
+    let list = files;
+
+    if (duplicates.length) {
+      const choice = await askAboutDuplicates(duplicates, fresh.length);
+      if (choice === 'cancel') {
+        toast('取り込みをやめました');
+        return;
+      }
+      overwrite = choice === 'overwrite';
+    }
+
+    toast('取り込み中…');
+    const r = await lib.importFiles(list, { overwrite });
+    stored = await lib.listStored();
+    // 取り込んだ画像はレシピ画面の候補にもなるので、画面全体を作り直す。
+    await refresh();
+
+    const parts = [`${r.added}点を取り込みました`];
+    if (r.matched) parts.push(`カタログ一致 ${r.matched}点`);
+    if (r.overwritten) parts.push(`上書き ${r.overwritten}点`);
+    if (r.skippedDup.length) parts.push(`同名を飛ばした ${r.skippedDup.length}点`);
+    if (skipped) parts.push(`画像以外を除外 ${skipped}点`);
+    toast(parts.join(' / '));
+  };
+
+  ['dragenter', 'dragover'].forEach((ev) =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('over'); }));
+  dz.addEventListener('drop', (e) => onFiles(e.dataTransfer.files));
+  $('#file-input').addEventListener('change', async (e) => {
+    const input = e.target;
+    const files = input.files;
+    // 選択を空に戻しておく。そうしないと、同じファイルを選び直したときに
+    // change が発火せず、やり直しができない。
+    await onFiles(files);
+    input.value = '';
+  });
+}
+
+/* ============================ スペック ============================ */
+
+function renderSpec() {
+  const c = $('#spec-content');
+  c.replaceChildren();
+
+  for (const p of Object.values(PRODUCTS)) {
+    const n = p.nutrition;
+    const rows = [
+      ['名称', p.category], ['内容量', p.volume], ['原材料名', p.ingredients],
+      ['原産国', p.origin], ['ゆで時間', `${p.boilMin}分`], ['ゆであがり目安', `${p.cookedWeightG}g`],
+      ['保存方法', p.storage]
+    ];
+    const nuts = [
+      ['エネルギー', `${n.kcal} kcal`], ['たんぱく質', `${n.protein} g`], ['脂質', `${n.fat} g`],
+      ['炭水化物', `${n.carb} g`], ['　うち糖質', `${n.sugar} g`], ['　うち食物繊維', `${n.fiber} g`],
+      ['食塩相当量', `${n.salt} g`]
+    ];
+    c.append(el('div', { class: 'card' },
+      el('h2', {}, `${p.name}（${p.nameJa}）`),
+      el('table', {}, ...rows.map(([k, v]) => el('tr', {}, el('th', {}, k), el('td', {}, v)))),
+      el('h3', {}, `栄養成分表示（1食 ${p.servingG}g あたり）`),
+      el('table', {}, ...nuts.map(([k, v]) => el('tr', {}, el('th', {}, k), el('td', { class: 'num' }, v)))),
+      el('h3', {}, 'アレンジ例'),
+      el('div', { class: 'chips' }, ...p.recipes.map((r) => el('span', { class: 'chip' }, `${r.name}｜${r.note}`)))
+    ));
+  }
+
+  c.append(el('div', { class: 'card' },
+    el('h2', {}, '共通情報'),
+    el('h3', {}, '不使用'),
+    el('div', { class: 'chips' }, ...COMMON.freeFrom.map((f) => el('span', { class: 'chip' }, f))),
+    el('h3', {}, '製造工場の認証'),
+    el('div', { class: 'chips' }, ...COMMON.certifications.map((x) => el('span', { class: 'chip accent' }, `${x.code}（${x.desc}）`))),
+    el('h3', {}, '比較データ（使用時は注記が必須）'),
+    el('table', {},
+      ...Object.values(COMPARISONS).map((x) => el('tr', {},
+        el('th', {}, x.label),
+        el('td', {}, x.protein !== undefined ? `たんぱく質 ${x.protein}g` : `糖質 ${x.sugarPer100g}g/100g`),
+        el('td', {}, x.source || '—')))),
+    el('h3', {}, '注意事項'),
+    ...COMMON.cautions.map((x) => el('p', { class: 'hint' }, '・' + x))
+  ));
+
+  c.append(el('div', { class: 'card danger' },
+    el('h2', {}, '資料上の確認事項'),
+    ...DATA_NOTES.map((x) => el('p', { class: 'hint' }, '・' + x)),
+    el('p', { class: 'hint' }, `素材フォルダ：`, el('a', { href: DRIVE_FOLDER_URL, target: '_blank', rel: 'noopener' }, DRIVE_FOLDER_URL))
+  ));
+}
+
+/* ============================ 投稿ログ ============================ */
+
+function renderLog() {
+  const c = $('#log-content');
+  c.replaceChildren();
+  if (!postLog.entries.length) {
+    c.append(el('div', { class: 'card' }, el('p', { class: 'hint' }, 'まだ投稿記録はありません。')));
+    return;
+  }
+  for (const e of postLog.entries) {
+    c.append(el('div', { class: 'card' },
+      el('div', { class: 'chips' },
+        el('span', { class: 'chip accent' }, e.platform === 'ig' ? 'Instagram' : 'X'),
+        el('span', { class: 'chip' }, e.dateKey),
+        el('span', { class: 'chip' }, e.axis),
+        el('span', { class: 'chip' }, e.sku),
+        e.image ? el('span', { class: 'chip' }, e.image) : null),
+      el('pre', { class: 'hint', style: 'white-space:pre-wrap;margin-top:10px' }, e.text)
+    ));
+  }
+}
+
+/* ============================ 設定 ============================ */
+
+/**
+ * ロゴを読み直して、合成に使える形（ビットマップ）にしておく。
+ * ファイルは一切加工しない。合成時に縦横比のまま拡縮するだけ。
+ */
+async function reloadLogos() {
+  const rec = await lib.loadLogos();
+  const toBitmap = async (r) => (r && r.blob ? composer.loadBitmap(r.blob) : null);
+  logos = {
+    onPhoto: await toBitmap(rec.onPhoto),
+    onLight: await toBitmap(rec.onLight),
+    hasOnPhoto: rec.hasOnPhoto,
+    hasOnLight: rec.hasOnLight,
+    names: { onPhoto: rec.onPhoto ? rec.onPhoto.name : '', onLight: rec.onLight ? rec.onLight.name : '' }
+  };
+}
+
+/** 設定タブのロゴ登録欄を組む */
+function renderLogoSettings() {
+  const box = $('#logo-slots');
+  box.textContent = '';
+  for (const [slot, label] of Object.entries(lib.LOGO_SLOTS)) {
+    const has = slot === 'onPhoto' ? logos.hasOnPhoto : logos.hasOnLight;
+    const bmp = logos[slot];
+    const borrowed = !has && bmp; // もう片方を流用している状態
+
+    const preview = el('div', { class: `logo-preview ${slot}` });
+    if (bmp) {
+      const c = el('canvas');
+      const h = 56;
+      c.width = Math.max(1, Math.round((bmp.width / bmp.height) * h));
+      c.height = h;
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      preview.append(c);
+    } else {
+      preview.append(el('span', { class: 'hint' }, '未登録（文字で組んだ代用を描きます）'));
+    }
+
+    box.append(el('div', { class: 'logo-slot' },
+      el('div', { class: 'logo-slot-head' },
+        el('b', {}, label),
+        borrowed ? el('span', { class: 'chip' }, 'もう一方を流用中') : null,
+        has && bmp ? el('span', { class: 'chip' }, `${bmp.width}×${bmp.height}px`) : null),
+      preview,
+      el('div', { class: 'row' },
+        el('label', { class: 'btn ghost' }, has ? 'ロゴを差し替える' : 'ロゴを登録する',
+          el('input', {
+            type: 'file', accept: 'image/png,image/svg+xml,image/webp,image/*', hidden: 'hidden',
+            onchange: async (e) => {
+              const file = e.target.files[0];
+              e.target.value = '';
+              if (!file) return;
+              if (/svg/i.test(file.type)) {
+                toast('SVG は canvas に描けないことがあります。PNG（背景透過）をおすすめします');
+              }
+              await lib.saveLogo(slot, file);
+              await reloadLogos();
+              toast('ロゴを登録しました');
+              await refresh();
+            }
+          })),
+        has ? el('button', {
+          class: 'btn ghost',
+          onclick: async () => {
+            await lib.removeLogo(slot);
+            await reloadLogos();
+            toast('ロゴを削除しました');
+            await refresh();
+          }
+        }, '削除') : null)
+    ));
+  }
+}
+
+function renderSettings() {
+  renderLogoSettings();
+  $('#accent-input').value = settings.accent;
+  $('#ig-aspect').value = settings.igAspect;
+  $('#x-aspect').value = settings.xAspect;
+  $('#opt-pr').checked = settings.prMode;
+  $('#opt-sync').checked = settings.syncPlatforms;
+  $('#cron-hint').innerHTML =
+    '毎朝 8:00（日本時間）に GitHub Actions が動き、その日の提案の要点をメールで送ります。' +
+    '提案そのものは日付をシードに生成されるため、メールとこの画面の内容は必ず一致します。' +
+    '送信先や SMTP の設定は <code>.github/workflows/daily-sns-brief.yml</code> と リポジトリの Secrets で管理します。';
+
+  $('#accent-input').onchange = (e) => { settings.accent = e.target.value; save(LS.settings, settings); refresh(); };
+  $('#ig-aspect').onchange = (e) => { settings.igAspect = e.target.value; save(LS.settings, settings); refresh(); };
+  $('#x-aspect').onchange = (e) => { settings.xAspect = e.target.value; save(LS.settings, settings); refresh(); };
+  $('#opt-pr').onchange = (e) => { settings.prMode = e.target.checked; save(LS.settings, settings); refresh(); };
+  $('#opt-sync').onchange = (e) => { settings.syncPlatforms = e.target.checked; save(LS.settings, settings); refresh(); };
+
+  $('#btn-export').onclick = () => {
+    const data = { settings, edits, log: postLog, tags: lib.loadTags(), sku: skuOverrides };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    composer.download(blob, `pm-sns-settings-${jstDateKey()}.json`);
+  };
+  $('#import-json').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (data.settings) { settings = { ...defaultSettings, ...data.settings }; save(LS.settings, settings); }
+      if (data.edits) { edits = data.edits; save(LS.edits, edits); }
+      if (data.log) { postLog = data.log; save(LS.log, postLog); }
+      if (data.tags) lib.saveTags(data.tags);
+      if (data.sku) { skuOverrides = data.sku; save(LS.sku, skuOverrides); }
+      toast('読み込みました');
+      refresh();
+    } catch { toast('読み込めませんでした'); }
+  };
+  $('#btn-clear').onclick = async () => {
+    if (!confirm('取り込んだ画像をすべて削除します。タグと設定は残ります。')) return;
+    await lib.clearAll();
+    stored = [];
+    refresh();
+    toast('画像ライブラリを空にしました');
+  };
+}
+
+/* ============================ 起動 ============================ */
+
+/**
+ * 描画に失敗したとき、原因をその画面の中に出す。
+ * コンソールを開いてもらわないと原因が分からない状態が続いたので、
+ * エラー本文とスタックを画面に出し、そのままコピーできるようにした。
+ */
+function showViewError(viewSel, name, err) {
+  const view = $(viewSel);
+  if (!view) return;
+  const detail = [
+    `${name} の描画に失敗`,
+    `${err && err.name ? err.name : 'Error'}: ${err && err.message ? err.message : String(err)}`,
+    err && err.stack ? String(err.stack).split('\n').slice(0, 6).join('\n') : ''
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let box = $('.view-error', view);
+  if (!box) {
+    box = el('div', { class: 'view-error notice danger' });
+    view.prepend(box);
+  }
+  box.textContent = '';
+  box.append(
+    el('p', {}, el('b', {}, `${name} を表示できませんでした。`)),
+    el('pre', { class: 'view-error-detail' }, detail),
+    el(
+      'div',
+      { class: 'row' },
+      el(
+        'button',
+        {
+          class: 'btn ghost',
+          onclick: async () => {
+            try {
+              await navigator.clipboard.writeText(detail);
+              toast('エラー内容をコピーしました');
+            } catch {
+              toast('コピーできませんでした（文字を選んでコピーしてください）');
+            }
+          }
+        },
+        'このエラーをコピー'
+      ),
+      el('button', { class: 'btn ghost', onclick: () => refresh() }, 'もう一度読み込む')
+    )
+  );
+}
+
+function clearViewError(viewSel) {
+  const box = $(`${viewSel} .view-error`);
+  if (box) box.remove();
+}
+
+async function refresh() {
+  // どこか1つが失敗しても、残りの画面は描けるようにする。
+  const steps = [
+    ['今日の提案', '#view-proposals', renderProposals],
+    ['画像ライブラリ', '#view-library', renderLibrary],
+    ['レシピ投稿', '#view-recipe', renderRecipeView],
+    ['スペック', '#view-spec', renderSpec],
+    ['投稿ログ', '#view-log', renderLog],
+    ['設定', '#view-settings', renderSettings]
+  ];
+  for (const [name, viewSel, fn] of steps) {
+    try {
+      await fn();
+      clearViewError(viewSel);
+    } catch (err) {
+      console.error(`${name} の描画に失敗しました:`, err);
+      showViewError(viewSel, name, err);
+      toast(`${name} の表示に失敗しました（画面のエラー内容をご覧ください）`);
+    }
+  }
+  document.documentElement.style.setProperty('--accent', settings.accent);
+}
+
+function setupTabs() {
+  $$('#tabs .tab').forEach((tab) => {
+    tab.onclick = () => {
+      $$('#tabs .tab').forEach((t) => t.classList.remove('active'));
+      $$('main .view').forEach((v) => v.classList.remove('active'));
+      tab.classList.add('active');
+      $(`#view-${tab.dataset.view}`).classList.add('active');
+    };
+  });
+  $$('.lib-filters .chip-btn').forEach((b) => {
+    b.onclick = () => {
+      $$('.lib-filters .chip-btn').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+      libFilter = b.dataset.filter;
+      renderLibrary();
+    };
+  });
+}
+
+/** 共有モードのとき、上部に利用者名・保存状況・更新ボタンを出す */
+function setupSharedBar() {
+  if (!backend.isShared) return;
+  const user = backend.currentUser();
+  const status = el('span', { class: 'save-state', id: 'save-state' }, '共有中');
+  backend.onStatus((state) => {
+    status.textContent = state === 'saving' ? '保存中…' : state === 'error' ? '保存に失敗' : '保存済み';
+    status.classList.toggle('bad', state === 'error');
+  });
+  $('.topbar-right').prepend(
+    el('div', { class: 'share-bar' },
+      el('span', { class: 'chip accent' }, '共有版'),
+      el('span', { class: 'who' }, user && user.email ? user.email : 'ログイン中'),
+      status,
+      el('button', {
+        class: 'btn ghost', title: '他のメンバーの更新を取り込みます',
+        onclick: async () => {
+          await backend.flushNow();
+          await backend.pull();
+          adoptSharedState();
+          stored = await lib.listStored();
+          await reloadLogos();
+          await refresh();
+          toast('最新の内容を読み込みました');
+        }
+      }, '最新に更新')
+    )
+  );
+  // 書きかけを残したまま閉じられないようにする
+  window.addEventListener('beforeunload', () => { backend.flushNow(); });
+}
+
+async function boot() {
+  if (backend.isShared) {
+    try {
+      await backend.init();
+      adoptSharedState();
+    } catch (err) {
+      console.error('共有データを読み込めませんでした:', err);
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div class="notice danger" style="margin:16px">共有データを読み込めませんでした。ページを再読み込みしてください。</div>');
+    }
+  }
+  setupSharedBar();
+  await loadRecipeModules();
+  if (recipeData && !recipeState.key && recipeData.RECIPES[0]) {
+    recipeState.key = recipeData.RECIPES[0].key;
+  }
+  setupTabs();
+  setupDropzone();
+  $('#date-input').value = dateKey;
+  $('#date-input').onchange = (e) => { dateKey = e.target.value || jstDateKey(); variants = { ig: 0, x: 0 }; refresh(); };
+  $('#btn-today').onclick = () => {
+    dateKey = jstDateKey();
+    $('#date-input').value = dateKey;
+    variants = { ig: 0, x: 0 };
+    refresh();
+  };
+  stored = await lib.listStored();
+  try {
+    await reloadLogos();
+  } catch (err) {
+    console.warn('ロゴを読み込めませんでした:', err);
+  }
+  await refresh();
+}
+
+boot();
+
+  return {
+
+  };
+});
+    __req("app.js");
+  } catch (err) {
+    console.error(err);
+    document.body.insertAdjacentHTML(
+      'afterbegin',
+      '<div class="notice danger" style="margin:16px">読み込みに失敗しました。<pre style="white-space:pre-wrap">' +
+        String(err && err.stack ? err.stack : err).replace(/[&<]/g, function (c) { return c === '&' ? '&amp;' : '&lt;'; }) +
+        '</pre></div>'
+    );
+  }
+})();
+</script>
+</body>
+</html>

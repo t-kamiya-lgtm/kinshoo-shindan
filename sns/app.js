@@ -6,6 +6,7 @@ import { TAG_VOCAB, DRIVE_FOLDER_URL, IMAGE_CATALOG } from './data/images.js';
 import * as lib from './library.js';
 import * as composer from './composer.js';
 import { HASHTAGS } from './data/copy.js';
+import * as backend from './backend.js';
 
 // レシピ機能は後から読み込む。静的 import にすると、レシピ関連のファイルが
 // 1つ欠けただけでモジュール全体が読めず、ダッシュボードが真っ白になってしまう。
@@ -43,11 +44,36 @@ const defaultSettings = {
   syncPlatforms: true
 };
 
+// 共有モード（Apps Script 上）では、共有側にある値を優先して読む。
+// 端末モードではこれまで通り localStorage だけを見る。
 const load = (k, fb) => {
+  if (backend.isShared) {
+    const shared = backend.getDoc(k);
+    if (shared && typeof shared === 'object') return { ...fb, ...shared };
+    return { ...fb };
+  }
   try { return { ...fb, ...JSON.parse(localStorage.getItem(k) || '{}') }; }
   catch { return { ...fb }; }
 };
-const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+const save = (k, v) => {
+  if (backend.isShared) {
+    backend.putDoc(k, v);
+    return;
+  }
+  localStorage.setItem(k, JSON.stringify(v));
+};
+
+/** 共有側から読み直した内容を、画面の状態に取り込む */
+function adoptSharedState() {
+  settings = { ...defaultSettings, ...load(LS.settings, defaultSettings) };
+  edits = load(LS.edits, {});
+  postLog = load(LS.log, { entries: [] });
+  if (!Array.isArray(postLog.entries)) postLog = { entries: [] };
+  recipeState = load(LS.recipe, { key: null, heroKey: '', captions: {} });
+  if (!recipeState.captions) recipeState.captions = {};
+  skuOverrides = load(LS.sku, {});
+}
 
 let settings = load(LS.settings, defaultSettings);
 // 初期のアクセントカラーは黄緑だったが、ブランドカラーはオレンジだった。
@@ -330,7 +356,9 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
 
   const redraw = async () => {
     if (!imageItem) return;
-    const bmp = await composer.loadBitmap(imageItem.blob);
+    const blob = await lib.blobOf(imageItem);
+    if (!blob) return;
+    const bmp = await composer.loadBitmap(blob);
     await composer.render(canvas, bmp, {
       aspect,
       overlay: isComposite ? post.image.overlay : null,
@@ -688,12 +716,16 @@ async function renderRecipeView() {
   }
 
   const heroItem = stored.find((x) => x.key === chosenKey) || null;
-  const heroImg = heroItem ? await composer.loadBitmap(heroItem.blob) : null;
+  const heroBlob = heroItem ? await lib.blobOf(heroItem) : null;
+  const heroImg = heroBlob ? await composer.loadBitmap(heroBlob) : null;
 
   // ④のサムネは、他のレシピのできあがり写真を使う
   const thumbItems = options.filter((o) => o.key !== chosenKey).slice(0, 3);
   const thumbs = [];
-  for (const t of thumbItems) thumbs.push(await composer.loadBitmap(t.blob));
+  for (const t of thumbItems) {
+    const tb = await lib.blobOf(t);
+    if (tb) thumbs.push(await composer.loadBitmap(tb));
+  }
 
   // 4枚を描く
   slidesBox.replaceChildren();
@@ -813,7 +845,7 @@ async function renderLibrary() {
   for (const r of filtered) {
     const thumb = el('div', { class: 'lib-thumb' });
     if (r.stored) {
-      const url = URL.createObjectURL(r.stored.blob);
+      const url = URL.createObjectURL(await lib.blobOf(r.stored));
       thumb.append(el('img', { src: url, alt: r.file, loading: 'lazy' }));
     } else if (r.thumbUrl) {
       const img = el('img', { src: r.thumbUrl, alt: r.file, loading: 'lazy', referrerpolicy: 'no-referrer' });
@@ -1226,7 +1258,50 @@ function setupTabs() {
   });
 }
 
+/** 共有モードのとき、上部に利用者名・保存状況・更新ボタンを出す */
+function setupSharedBar() {
+  if (!backend.isShared) return;
+  const user = backend.currentUser();
+  const status = el('span', { class: 'save-state', id: 'save-state' }, '共有中');
+  backend.onStatus((state) => {
+    status.textContent = state === 'saving' ? '保存中…' : state === 'error' ? '保存に失敗' : '保存済み';
+    status.classList.toggle('bad', state === 'error');
+  });
+  $('.topbar-right').prepend(
+    el('div', { class: 'share-bar' },
+      el('span', { class: 'chip accent' }, '共有版'),
+      el('span', { class: 'who' }, user && user.email ? user.email : 'ログイン中'),
+      status,
+      el('button', {
+        class: 'btn ghost', title: '他のメンバーの更新を取り込みます',
+        onclick: async () => {
+          await backend.flushNow();
+          await backend.pull();
+          adoptSharedState();
+          stored = await lib.listStored();
+          await reloadLogos();
+          await refresh();
+          toast('最新の内容を読み込みました');
+        }
+      }, '最新に更新')
+    )
+  );
+  // 書きかけを残したまま閉じられないようにする
+  window.addEventListener('beforeunload', () => { backend.flushNow(); });
+}
+
 async function boot() {
+  if (backend.isShared) {
+    try {
+      await backend.init();
+      adoptSharedState();
+    } catch (err) {
+      console.error('共有データを読み込めませんでした:', err);
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div class="notice danger" style="margin:16px">共有データを読み込めませんでした。ページを再読み込みしてください。</div>');
+    }
+  }
+  setupSharedBar();
   await loadRecipeModules();
   if (recipeData && !recipeState.key && recipeData.RECIPES[0]) {
     recipeState.key = recipeData.RECIPES[0].key;

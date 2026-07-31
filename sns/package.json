@@ -5,6 +5,7 @@
   "description": "PROTEIN MONSTER SNS 投稿自動生成ダッシュボード",
   "scripts": {
     "build": "node ../scripts/build-single.mjs",
-    "selftest": "node selftest.js"
+    "selftest": "node selftest.js",
+    "build:appsscript": "node ../scripts/build-single.mjs --format classic --out ../appsscript/Index.html"
   }
 }

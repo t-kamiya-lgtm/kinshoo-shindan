@@ -238,6 +238,12 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 }
 .card.danger { border-color: rgba(255, 107, 107, 0.3); }
 
+/* 共有版の上部バー */
+.share-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-right: 12px; }
+.share-bar .who { font-size: 12px; color: var(--muted); }
+.share-bar .save-state { font-size: 11px; color: var(--muted); min-width: 4.5em; }
+.share-bar .save-state.bad { color: #ff6b6b; }
+
 /* 商品（SKU）の切り替え */
 .sku-picker {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;

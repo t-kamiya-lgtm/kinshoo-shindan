@@ -5,6 +5,7 @@
 // 一度ドラッグ＆ドロップすれば、以後はブラウザを閉じても残る。
 
 import { IMAGE_CATALOG, TAG_VOCAB } from './data/images.js';
+import * as backend from './backend.js';
 
 const DB_NAME = 'pm-sns';
 const DB_VERSION = 1;
@@ -119,18 +120,22 @@ export async function importFiles(fileList, opts = {}) {
     }
 
     const blob = file.slice(0, file.size, file.type || 'image/jpeg');
-    await tx('readwrite', (store) =>
-      store.put({
-        key,
-        norm,
-        name: file.name,
-        driveId: cat ? cat.driveId : null,
-        size: file.size,
-        type: file.type || 'image/jpeg',
-        importedAt: Date.now(),
-        blob
-      })
-    );
+    if (backend.isShared) {
+      await backend.uploadImage(key, blob);
+    } else {
+      await tx('readwrite', (store) =>
+        store.put({
+          key,
+          norm,
+          name: file.name,
+          driveId: cat ? cat.driveId : null,
+          size: file.size,
+          type: file.type || 'image/jpeg',
+          importedAt: Date.now(),
+          blob
+        })
+      );
+    }
     existingKeys.add(key);
     result.added++;
     if (cat) result.matched++;
@@ -139,15 +144,51 @@ export async function importFiles(fileList, opts = {}) {
   return result;
 }
 
-export async function listStored() {
+// 共有モードの一覧は Drive から取る。実体（Blob）は使うときに取りに行き、
+// 一度取ったら IndexedDB に控える（毎回ダウンロードすると重いため）。
+let remoteIndex = new Map(); // key → Drive のファイル情報
+
+async function listLocal() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const t = db.transaction(STORE, 'readonly');
     const req = t.objectStore(STORE).getAll();
-    // ロゴは素材写真ではないので、一覧・自動選択の対象から外す
-    req.onsuccess = () => resolve((req.result || []).filter((r) => !RESERVED.has(r.key)));
+    req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
+}
+
+export async function listStored() {
+  if (backend.isShared) {
+    const files = await backend.listImages();
+    remoteIndex = new Map(files.map((f) => [f.key, f]));
+    // ロゴは素材写真ではないので、一覧・自動選択の対象から外す
+    return files.filter((f) => !RESERVED.has(f.key));
+  }
+  // 控え（__cache__…）は素材ではないので混ぜない
+  return (await listLocal()).filter((r) => !RESERVED.has(r.key) && !r.key.startsWith('__cache__'));
+}
+
+/**
+ * 画像の実体を返す。共有モードでは初回だけ Drive から取り、以後は端末の控えを使う。
+ * 控えのキーに更新時刻を含めるので、誰かが差し替えれば自動で取り直される。
+ */
+export async function blobOf(item) {
+  if (!item) return null;
+  if (item.blob) return item.blob;
+  if (!backend.isShared || !item.id) return null;
+
+  const cacheKey = `__cache__${item.id}__${item.modified || ''}`;
+  const cached = await getRaw(cacheKey);
+  if (cached && cached.blob) return cached.blob;
+
+  const blob = await backend.fetchImage(item.id);
+  try {
+    await tx('readwrite', (store) => store.put({ key: cacheKey, blob, cachedAt: Date.now() }));
+  } catch {
+    /* 控えを作れなくても表示はできる */
+  }
+  return blob;
 }
 
 /* --------------------------- ブランドロゴ --------------------------- */
@@ -168,6 +209,11 @@ export async function saveLogo(slot, file) {
   const key = LOGO_KEYS[slot];
   if (!key) throw new Error(`不明なロゴ枠: ${slot}`);
   const blob = file.slice(0, file.size, file.type || 'image/png');
+  if (backend.isShared) {
+    await backend.uploadImage(key, blob);
+    remoteIndex.clear(); // 次の一覧取得で読み直す
+    return;
+  }
   await tx('readwrite', (store) =>
     store.put({ key, name: file.name, type: file.type || 'image/png', size: file.size, importedAt: Date.now(), blob })
   );
@@ -176,7 +222,9 @@ export async function saveLogo(slot, file) {
 export async function getLogo(slot) {
   const key = LOGO_KEYS[slot];
   if (!key) return null;
-  return getImage(key);
+  const rec = await getImage(key);
+  if (!rec) return null;
+  return rec.blob ? rec : { ...rec, blob: await blobOf(rec) };
 }
 
 export async function removeLogo(slot) {
@@ -190,17 +238,36 @@ export async function loadLogos() {
   return { onPhoto: onPhoto || onLight, onLight: onLight || onPhoto, hasOnPhoto: !!onPhoto, hasOnLight: !!onLight };
 }
 
-export async function getImage(key) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
+/** IndexedDB から素のレコードを読む（控えの取り出しにも使う） */
+function getRaw(key) {
+  return openDB().then((db) => new Promise((resolve, reject) => {
     const t = db.transaction(STORE, 'readonly');
     const req = t.objectStore(STORE).get(key);
     req.onsuccess = () => resolve(req.result || null);
     req.onerror = () => reject(req.error);
-  });
+  }));
+}
+
+export async function getImage(key) {
+  if (backend.isShared) {
+    if (!remoteIndex.size) await listStored();
+    const meta = remoteIndex.get(key);
+    if (!meta) return null;
+    return { ...meta, blob: await blobOf(meta) };
+  }
+  return getRaw(key);
 }
 
 export async function removeImage(key) {
+  if (backend.isShared) {
+    if (!remoteIndex.size) await listStored();
+    const meta = remoteIndex.get(key);
+    if (meta) {
+      await backend.deleteImage(meta.id);
+      remoteIndex.delete(key);
+    }
+    return;
+  }
   return tx('readwrite', (store) => store.delete(key));
 }
 
@@ -213,6 +280,7 @@ export async function clearAll() {
 /* --------------------------- タグ --------------------------- */
 
 export function loadTags() {
+  if (backend.isShared) return backend.getDoc(TAGS_KEY) || {};
   try {
     return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}');
   } catch {
@@ -221,6 +289,10 @@ export function loadTags() {
 }
 
 export function saveTags(tags) {
+  if (backend.isShared) {
+    backend.putDoc(TAGS_KEY, tags);
+    return;
+  }
   localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
 }
 
