@@ -7,7 +7,7 @@
 import { PRODUCTS, COMMON } from './data/products.js';
 import {
   AXES, STANCES, HOOKS, BODIES, BODIES_X, CLOSINGS, CLOSINGS_X,
-  ALLERGY_NOTE, HASHTAGS, OVERLAYS
+  allergyNotes, HASHTAGS, OVERLAYS
 } from './data/copy.js';
 import { checkCompliance } from './compliance.js';
 
@@ -82,7 +82,7 @@ export function buildHashtags(rng, { sku, axis, platform }) {
 
 /* -------------------------- キャプション -------------------------- */
 
-function buildCaption(rng, { product, axis, stance, platform }) {
+function buildCaption(rng, { product, axis, audience, stance, platform }) {
   const p = product;
   const n = p.nutrition;
   const hook = pick(rng, HOOKS[axis][stance])(p, n);
@@ -90,13 +90,15 @@ function buildCaption(rng, { product, axis, stance, platform }) {
 
   if (platform === 'x') {
     // 日本語主体の投稿として 140 字前後に収める。本文は専用の1行版を使う。
-    const closing = pick(rng, CLOSINGS_X);
+    const closing = pick(rng, CLOSINGS_X[audience]);
     const body = pick(rng, BODIES_X[axis][stance](p, n));
     return [hook, '', body, '', closing].join('\n');
   }
 
-  const closing = pick(rng, CLOSINGS);
-  const parts = [hook, '', bodyBlocks.join('\n\n'), '', closing, '', ALLERGY_NOTE, COMMON.disclaimers.nutrition];
+  // 締めは読み手に合わせて選ぶ。ここを共通プールにすると相手が入れ替わる。
+  const closing = pick(rng, CLOSINGS[audience]);
+  const parts = [hook, '', bodyBlocks.join('\n\n'), '', closing, '',
+    allergyNotes(p), COMMON.disclaimers.nutrition];
   return parts.join('\n');
 }
 
@@ -169,8 +171,9 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, fo
 
   // 画像プランを先に決めるのは、乱数の消費順を媒体間でそろえるため。
   // キャプションは媒体で長さが違い、引く回数も変わるので、後ろに置く。
+  const audience = axisDef.audience || 'both';
   const image = buildImagePlan(rng, { product, axis, stance, platform });
-  const caption = buildCaption(rng, { product, axis, stance, platform });
+  const caption = buildCaption(rng, { product, axis, audience, stance, platform });
   const hashtags = buildHashtags(rng, { sku: skuId, axis, platform });
 
   const fullText = platform === 'ig'
@@ -186,6 +189,8 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, fo
     axisLabel: axisDef.label,
     stance,
     stanceLabel: stanceDef.label,
+    audience,
+    audienceLabel: axisDef.audienceLabel || '共通',
     sku: skuId,
     skuLabel: product.nameJa,
     caption,

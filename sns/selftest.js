@@ -56,6 +56,37 @@ for (let d = 0; d < 365; d++) {
         errors++;
         console.error(`\n[タグ超過] ${post.id}: ${post.hashtags.length}個`);
       }
+      // 読み手の混在。1投稿の中でトレーニー向けとダイエッター向けが
+      // 混ざると、誰に向けた話なのか分からなくなる。目視では気づけない。
+      const TRAINEE_ONLY = [/飲むより、食べる/, /新しいプロテインのかたち/];
+      const DIETER_ONLY = [/おいしく食べてダイエット/, /主食をガマンしない毎日/];
+      if (post.audience === 'dieter' && TRAINEE_ONLY.some((r) => r.test(post.caption))) {
+        errors++;
+        console.error(`\n[読み手の混在] ${post.id}: ダイエッター向けの本文にトレーニー向けの締めが入っています`);
+      }
+      if (post.audience === 'trainee' && DIETER_ONLY.some((r) => r.test(post.caption))) {
+        errors++;
+        console.error(`\n[読み手の混在] ${post.id}: トレーニー向けの本文にダイエッター向けの締めが入っています`);
+      }
+
+      // アレルギー表示。モンスターの工場でそばは扱っていない。
+      // 誤った表示は実害につながるので、毎回機械で確かめる。
+      if (post.platform === 'ig') {
+        const hasSobaIngredient = /原材料にそばを含みます/.test(post.caption);
+        if (/工場では、そば/.test(post.caption)) {
+          errors++;
+          console.error(`\n[アレルギー表示の誤り] ${post.id}: 製造工場の表示に「そば」が入っています`);
+        }
+        if (post.sku === 'sova' && !hasSobaIngredient) {
+          errors++;
+          console.error(`\n[アレルギー表示もれ] ${post.id}: SOVA に原材料のそば表示がありません`);
+        }
+        if (post.sku === 'monster' && hasSobaIngredient) {
+          errors++;
+          console.error(`\n[アレルギー表示の誤り] ${post.id}: モンスターに原材料のそば表示が入っています`);
+        }
+      }
+
       // 画像に載せる文字も検査対象
       if (post.image.overlay) {
         const ov = post.image.overlay;

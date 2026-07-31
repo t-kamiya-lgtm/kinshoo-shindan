@@ -343,6 +343,7 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
       el('div', { class: `platform ${post.platform}` }, el('span', { class: 'dot' }), platformLabel),
       el('div', { class: 'chips' },
         el('span', { class: 'chip accent' }, post.axisLabel),
+        post.audienceLabel ? el('span', { class: 'chip' }, post.audienceLabel) : null,
         post.stanceLabel ? el('span', { class: 'chip' }, post.stanceLabel) : null,
         el('span', { class: 'chip' }, post.skuLabel),
         el('span', { class: 'chip' }, isComposite ? '写真＋文字合成' : '写真そのまま'),
