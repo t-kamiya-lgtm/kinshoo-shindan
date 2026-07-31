@@ -7,6 +7,7 @@
 
 import { generateDailyPlan, jstDateKey } from './engine.js';
 import { checkCompliance } from './compliance.js';
+import { PRODUCTS } from './data/products.js';
 
 const X_LIMIT = 280;        // X の全角換算上限（日本語は1文字2カウントだが、ここでは安全側で文字数で見る）
 const X_SAFE_CHARS = 135;   // 日本語主体の投稿として安全な文字数
@@ -98,6 +99,14 @@ for (let d = 0; d < 365; d++) {
           errors++;
           console.error(`\n[画像文字NG] ${post.id}: ${t}`);
           r.blocks.forEach((b) => console.error(`   ${b.law}: 「${b.matched}」`));
+        }
+        // 画像に載せる文字に特定の料理名が入ると、写真と食い違う。
+        // 写真はタグから独立して選ばれるので、突き合わせる手立てがない。
+        const dishNames = PRODUCTS[post.sku].recipes.map((r) => r.name);
+        const namedDish = dishNames.find((name) => t.includes(name));
+        if (namedDish) {
+          errors++;
+          console.error(`\n[写真と食い違う恐れ] ${post.id}: 画像の文字に料理名「${namedDish}」が入っています`);
         }
         if (!['stat', 'hook', 'band'].includes(ov.template)) {
           errors++;

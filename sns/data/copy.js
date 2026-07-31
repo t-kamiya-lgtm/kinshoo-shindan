@@ -414,11 +414,14 @@ export const OVERLAYS = {
         sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
         chips: chips(p, n)
       }),
+      // 画像に載せる文字に特定の料理名は使わない。写真はタグから独立して
+      // 選ばれるため、料理名を書くと写真と食い違う（塩焼きそばの写真に
+      // 「豆乳担担麺風」と載る事故が起きた）。
       (p, n) => ({
         template: 'band',
         eyebrow: '鍋ひとつでできる',
-        big: `${p.recipes[0].name}`,
-        sub: `${p.recipes[0].note}／ゆで時間${p.boilMin}分`,
+        big: 'ゆでて、\n和えるだけ。',
+        sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
         chips: chips(p, n)
       }),
       (p, n) => ({
@@ -519,8 +522,8 @@ export const BODIES_X = {
     ],
     add: (p, n) => [
       `今日は麺にしよう、と言える日に。1食${n.kcal}kcal、たんぱく質${n.protein}gです。`,
-      `おすすめは${p.recipes[0].name}（${p.recipes[0].note}）。鍋ひとつ、ゆで時間${p.boilMin}分。`,
-      `${p.recipes[1].name}も${p.recipes[2].name}も鍋ひとつ。1食たんぱく質${n.protein}gです。`
+      `ゆでて和えるだけ。鍋ひとつ、ゆで時間${p.boilMin}分で1食たんぱく質${n.protein}gです。`,
+      `味付けはお好みで。1食${n.kcal}kcal、たんぱく質${n.protein}gの${p.category}です。`
     ]
   },
   daily: {
