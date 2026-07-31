@@ -933,6 +933,9 @@ function askAboutDuplicates(duplicates, freshCount) {
 
 function setupDropzone() {
   const dz = $('#dropzone');
+  $('#dz-note').textContent = backend.isShared
+    ? '画像は会社のドライブに保存され、メンバー全員が同じ写真を使えます。'
+    : '画像はこの端末のブラウザ内（IndexedDB）に保存されます。どこにもアップロードされません。';
   const onFiles = async (files) => {
     if (!files || !files.length) return;
 
@@ -1143,15 +1146,20 @@ function renderLogoSettings() {
 
 function renderSettings() {
   renderLogoSettings();
+  // 保存先の説明は、共有版と端末版で内容が変わる。取り違えると誤解を招く。
+  $('#data-note').textContent = backend.isShared
+    ? 'タグ・編集内容・投稿ログ・商品指定は、会社のドライブに保存され、メンバー全員で共有されます。'
+    : 'タグ・編集内容・投稿ログは、このブラウザにのみ保存されています。';
   $('#accent-input').value = settings.accent;
   $('#ig-aspect').value = settings.igAspect;
   $('#x-aspect').value = settings.xAspect;
   $('#opt-pr').checked = settings.prMode;
   $('#opt-sync').checked = settings.syncPlatforms;
+  // 通知メールは運用しない方針。毎朝この画面を開いて確認する。
   $('#cron-hint').innerHTML =
-    '毎朝 8:00（日本時間）に GitHub Actions が動き、その日の提案の要点をメールで送ります。' +
-    '提案そのものは日付をシードに生成されるため、メールとこの画面の内容は必ず一致します。' +
-    '送信先や SMTP の設定は <code>.github/workflows/daily-sns-brief.yml</code> と リポジトリの Secrets で管理します。';
+    'メールでの通知は行いません。毎朝この画面を開いてその日の提案をご確認ください。' +
+    '提案は日付から決まるため、<b>誰がいつ開いても同じ内容</b>になります。' +
+    '前日までの提案を見たいときは、右上の「対象日」で日付を変えてください。';
 
   $('#accent-input').onchange = (e) => { settings.accent = e.target.value; save(LS.settings, settings); refresh(); };
   $('#ig-aspect').onchange = (e) => { settings.igAspect = e.target.value; save(LS.settings, settings); refresh(); };

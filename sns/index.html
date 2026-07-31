@@ -58,7 +58,7 @@
         ファイルを選ぶ
         <input type="file" id="file-input" accept="image/*" multiple hidden>
       </label>
-      <p class="dz-note">画像はこの端末のブラウザ内（IndexedDB）に保存されます。どこにもアップロードされません。</p>
+      <p class="dz-note" id="dz-note"></p>
     </div>
 
     <div class="lib-toolbar">
@@ -177,13 +177,13 @@
     </div>
 
     <div class="card">
-      <h2>毎朝の通知</h2>
+      <h2>毎日の進め方</h2>
       <p class="hint" id="cron-hint"></p>
     </div>
 
     <div class="card danger">
       <h2>データ</h2>
-      <p class="hint">タグ・編集内容・投稿ログは、このブラウザにのみ保存されています。</p>
+      <p class="hint" id="data-note"></p>
       <div class="row">
         <button class="btn ghost" id="btn-export">設定とタグを書き出す</button>
         <label class="btn ghost">設定とタグを読み込む<input type="file" id="import-json" accept="application/json" hidden></label>
