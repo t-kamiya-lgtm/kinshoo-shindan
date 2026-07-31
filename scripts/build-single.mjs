@@ -235,6 +235,16 @@ try {
 
 let out = html;
 
+/* ---------------- 版の印 ----------------
+   どのファイルを見ているのかを画面から判別できるようにする。
+   JavaScript が動かない状態でも見えるよう、HTML に直接書き込む。 */
+const stampArg = process.argv.indexOf('--stamp');
+const STAMP = stampArg > -1 ? process.argv[stampArg + 1] : new Date().toISOString().slice(0, 16).replace('T', ' ');
+const subTag = /<p class="brand-sub">([^<]*)<\/p>/;
+if (!subTag.test(out)) throw new Error('index.html に brand-sub が見つかりません');
+out = out.replace(subTag, () =>
+  `<p class="brand-sub">PROTEIN MONSTER / SOVA<span class="build-stamp">版 ${STAMP}（${FORMAT}）</span></p>`);
+
 // 差し込みは必ず関数で行う。文字列を渡すと $$ や $& が置換の特殊記法として
 // 解釈され、埋め込むコードが黙って書き換わる（app.js の `const $$` が
 // `const $` になり、構文エラーになった）。
