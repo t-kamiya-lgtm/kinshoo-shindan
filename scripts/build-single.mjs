@@ -137,6 +137,13 @@ function toClassicFactory(modPath, code) {
       return `${kind} ${name}`;
     });
 
+  // 行コメントに URL を書くと、Apps Script の配信処理（document.write）が
+  // SyntaxError で止まり、スクリプトが丸ごと実行されなくなる。ここで弾く。
+  const urlComment = body.split('\n').find((l) => /^\s*\/\/.*:\/\//.test(l));
+  if (urlComment) {
+    throw new Error(`${modPath}: 行コメントに URL があります（Apps Script で読み込めなくなります）: ${urlComment.trim().slice(0, 60)}`);
+  }
+
   if (/^\s*export\s/m.test(body)) {
     throw new Error(`${modPath}: 変換できない export が残っています`);
   }

@@ -1,5 +1,9 @@
 // Google Drive 素材フォルダのカタログ
-// https://drive.google.com/drive/folders/1uXFEWTMOK9SUzummPzaUfwp61pcEpenl
+// フォルダID: 1uXFEWTMOK9SUzummPzaUfwp61pcEpenl（実URLは下の DRIVE_FOLDER_URL）
+//
+// 行コメントに URL をそのまま書かないこと。Apps Script は配信時にページを
+// document.write で組み立てるが、この形が残っていると書き込みが
+// SyntaxError（Unexpected identifier 'https'）で止まり、スクリプトが1行も動かない。
 //
 // 画像の実体はブラウザの画像ライブラリ（IndexedDB）に保存する。
 // Drive から直接読み込まないのは、canvas 合成時に CORS でタイント（書き出し不可）になるため。
