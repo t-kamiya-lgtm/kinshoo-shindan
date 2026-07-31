@@ -17,11 +17,31 @@
 export const isShared =
   typeof google !== 'undefined' && google.script && typeof google.script.run === 'object';
 
+// サーバーからの返事を待つ上限。これを超えたら「返ってこない」と分かるようにする。
+// 上限を設けないと、応答が来ないときに画面が空のまま止まり、原因が何も分からない。
+const CALL_TIMEOUT_MS = 30000;
+
 /** google.script.run を Promise で扱う */
 function call(fn, ...args) {
   return new Promise((resolve, reject) => {
     if (!isShared) return reject(new Error('共有モードではありません'));
-    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args);
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(`サーバー（${fn}）から ${CALL_TIMEOUT_MS / 1000} 秒以内に応答がありませんでした`));
+    }, CALL_TIMEOUT_MS);
+    const done = (fn2) => (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn2(value);
+    };
+    try {
+      google.script.run.withSuccessHandler(done(resolve)).withFailureHandler(done(reject))[fn](...args);
+    } catch (err) {
+      done(reject)(err);
+    }
   });
 }
 

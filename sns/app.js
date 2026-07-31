@@ -1316,15 +1316,43 @@ function setupSharedBar() {
   window.addEventListener('beforeunload', () => { backend.flushNow(); });
 }
 
+/**
+ * 拾いそこねたエラーを画面に出す。
+ * 非同期の処理で失敗すると、これまでは画面が空のまま何も表示されなかった。
+ * 原因を毎回コンソールで探すことになるので、その場に出す。
+ */
+function catchStrayErrors() {
+  const show = (label, detail) => {
+    const box = document.createElement('div');
+    box.className = 'notice danger';
+    box.style.margin = '16px';
+    box.innerHTML = `<b>${label}</b><pre class="view-error-detail"></pre>`;
+    box.querySelector('pre').textContent = detail;
+    document.body.prepend(box);
+  };
+  window.addEventListener('error', (e) => {
+    show('読み込み中にエラーが起きました', `${e.message}\n${e.filename || ''}:${e.lineno || ''}`);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    show('処理の途中で失敗しました', r && r.stack ? String(r.stack) : String(r && r.message ? r.message : r));
+  });
+}
+
 async function boot() {
+  catchStrayErrors();
   if (backend.isShared) {
     try {
       await backend.init();
       adoptSharedState();
     } catch (err) {
       console.error('共有データを読み込めませんでした:', err);
-      document.body.insertAdjacentHTML('afterbegin',
-        '<div class="notice danger" style="margin:16px">共有データを読み込めませんでした。ページを再読み込みしてください。</div>');
+      const box = document.createElement('div');
+      box.className = 'notice danger';
+      box.style.margin = '16px';
+      box.innerHTML = '<b>共有データを読み込めませんでした。</b><pre class="view-error-detail"></pre>';
+      box.querySelector('pre').textContent = err && err.stack ? String(err.stack) : String(err && err.message ? err.message : err);
+      document.body.prepend(box);
     }
   }
   setupSharedBar();
