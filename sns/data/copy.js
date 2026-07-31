@@ -3,111 +3,187 @@
 // すべての文面は薬機法・景表法チェッカー（compliance.js）を通過する前提で書いている。
 // 追記する際は「効果・効能を語らない／事実と食シーンだけを語る」を守ること。
 // 数値は必ず products.js から差し込み、ここにベタ書きしない。
+//
+// 【誰に向けて書くか】
+// これから頑張る人ではなく、もう頑張っている人。たんぱく質を意識した食事を
+// すでに続けていて、その手段を増やしたい・変えたいと思っている人に向けて書く。
+//
+// 【言い方の決めごと】
+// 1. 肯定形で書く。「鶏むねがつらい」「シェイカーが面倒」といった問題提起はしない。
+//    素材写真は麺しかなく、困りごとの絵を出せないため、絵と文が噛み合わなくなる。
+//    困りごとは解決した側だけを言う（例：「おかずを増やさずに、たんぱく質31.7g」）。
+// 2. 立場を2つ持つ（STANCES）。同じ軸でも日によって語り口が変わる。
+//    change … 摂り方そのものを新しくする（飲むから、食べるへ）
+//    add    … いまの習慣に足す（シェイクの日と、麺の日）
+// 3. 数値は先頭に置かない。食シーンを言ったあとの答えとして出す。
+
+/** 語り口。同じ軸でも、この2つで言い方を変える。 */
+export const STANCES = [
+  { id: 'change', label: '変える／超える', desc: 'たんぱく質の摂り方そのものを新しくする' },
+  { id: 'add', label: 'プラスする', desc: 'いまの習慣に、選択肢として足す' }
+];
 
 /** 訴求軸。毎朝ローテーションする。 */
 export const AXES = [
   {
-    id: 'workout',
-    label: '筋トレ・ボディメイク',
-    desc: 'トレーニング後のタンパク質補給という食シーン',
+    id: 'eat',
+    label: '食べるプロテイン',
+    desc: 'シェイクとは別の、食事としての摂り方',
     skuBias: 'monster'
   },
   {
-    id: 'diet',
-    label: '置き換え・栄養設計',
-    desc: '主食置き換えという食べ方と、1食あたりの数値',
+    id: 'staple',
+    label: '主食で摂る',
+    desc: 'おかずを積み増さずに1日の合計を変える',
     skuBias: null
   },
   {
-    id: 'time',
-    label: '時短・アレンジレシピ',
-    desc: '3〜5分でゆでるだけ、というつくりやすさ',
+    id: 'meal',
+    label: '麺のある食事管理',
+    desc: '数える日でも麺を選べるという食シーン',
     skuBias: null
   },
   {
-    id: 'trust',
-    label: '安心設計・原材料',
-    desc: '無添加設計と国際認証取得工場での製造',
+    id: 'daily',
+    label: '毎日のものだから',
+    desc: '原材料と製造。長く食べるための設計',
     skuBias: null
   }
 ];
 
 /* ------------------------------------------------------------------ *
- * フック（1行目）。ここが伸びを決めるので、軸ごとに複数持つ。
- * fn(p, n) : p = 商品オブジェクト, n = p.nutrition
+ * 書き出し（1行目）。軸 × 立場 で持つ。
  * ------------------------------------------------------------------ */
 export const HOOKS = {
-  workout: [
-    (p, n) => `シェイカー、洗うのが面倒になってきた人へ。`,
-    (p, n) => `トレ後のタンパク質、麺で摂るという選択。`,
-    (p, n) => `1食でたんぱく質${n.protein}g。ただし、麺です。`,
-    (p, n) => `プロテインを「飲む」から「食べる」に変えてみた。`,
-    (p, n) => `粉をシェイクする3分と、麺をゆでる${p.boilMin}分。`,
-    (p, n) => `ドロドロが苦手なまま、タンパク質を摂りたい。`
-  ],
-  diet: [
-    (p, n) => `いつもの主食を、この麺に置きかえた日の話。`,
-    (p, n) => `1食${n.kcal}kcal、たんぱく質${n.protein}g。麺です。`,
-    (p, n) => `主食を我慢しない、という選択肢。`,
-    (p, n) => `1食${n.kcal}kcalの麺で、昼をすませる日。`,
-    (p, n) => `糖質${n.sugar}g・たんぱく質${n.protein}g。これで1食分。`,
-    (p, n) => `食べた気がしない、が続かない理由だと思っています。`
-  ],
-  time: [
-    (p, n) => `お湯に入れて${p.boilMin}分。それだけ。`,
-    (p, n) => `今日はもう、何もしたくない日の一杯。`,
-    (p, n) => `${p.recipes[0].name}。鍋ひとつでできます。`,
-    (p, n) => `めんつゆだけでいい日がある。`,
-    (p, n) => `帰宅から${p.boilMin}分後の食卓。`,
-    (p, n) => `ゆでる、和える、終わり。`
-  ],
-  trust: [
-    (p, n) => `原材料表示、見てもらえますか。`,
-    (p, n) => `保存料・着色料・人工甘味料、入れていません。`,
-    (p, n) => `毎日食べるものだから、つくる場所にこだわりました。`,
-    (p, n) => `原材料は、${p.ingredients.split('、')[0]}から。`,
-    (p, n) => `シンプルな原材料で、麺をつくるということ。`
-  ]
+  eat: {
+    change: [
+      (p, n) => `飲むから、食べるへ。`,
+      (p, n) => `新しいプロテインは、麺のかたちをしている。`,
+      (p, n) => `プロテインを、食事にする。`,
+      (p, n) => `たんぱく質${n.protein}g。これ、麺です。`,
+      (p, n) => `粉ではなく、麺で摂るという方法。`
+    ],
+    add: [
+      (p, n) => `シェイクの日と、麺の日。`,
+      (p, n) => `いつものプロテインに、麺という選択肢を。`,
+      (p, n) => `今日のたんぱく質は、昼の麺から。`,
+      (p, n) => `プロテインの、もうひとつのかたち。`,
+      (p, n) => `飲む日もあれば、食べる日もある。`
+    ]
+  },
+  staple: {
+    change: [
+      (p, n) => `たんぱく質は、主食から摂る。`,
+      (p, n) => `主食が変われば、1日の合計が変わる。`,
+      (p, n) => `おかずを増やさずに、たんぱく質${n.protein}g。`,
+      (p, n) => `主食で摂るという、新しい発想。`,
+      (p, n) => `${p.category}が、主食になりました。`
+    ],
+    add: [
+      (p, n) => `いつもの一食を、この麺に。`,
+      (p, n) => `主食を変えるだけで、${n.protein}g。`,
+      (p, n) => `今日の昼を、たんぱく質の時間に。`,
+      (p, n) => `ごはんの日、パスタの日、そしてこの麺の日。`,
+      (p, n) => `一食ぶんの主食に、たんぱく質${n.protein}g。`
+    ]
+  },
+  meal: {
+    change: [
+      (p, n) => `食事管理に、麺という選択肢を。`,
+      (p, n) => `麺を選べる食事管理へ。`,
+      (p, n) => `1食${n.kcal}kcal。麺のまま。`,
+      (p, n) => `数えながら、麺を食べる。`,
+      (p, n) => `麺を、計算に入れられる日。`
+    ],
+    add: [
+      (p, n) => `今日は麺にしよう、と言える日。`,
+      (p, n) => `食べたいものに、麺を戻す。`,
+      (p, n) => `麺の日を、増やしていく。`,
+      (p, n) => `カウントする日の、うれしい一杯。`,
+      (p, n) => `献立に、麺が戻ってきました。`
+    ]
+  },
+  daily: {
+    change: [
+      (p, n) => `原材料は、${p.ingredients.split('、')[0]}から。`,
+      (p, n) => `毎日のものだから、中身は全部書きます。`,
+      (p, n) => `シンプルな原材料で、麺をつくる。`,
+      (p, n) => `つくる場所から、選びました。`
+    ],
+    add: [
+      (p, n) => `続けるものだから、素材で選ぶ。`,
+      (p, n) => `毎日の一食に、置いておけるもの。`,
+      (p, n) => `長く食べるための、原材料設計。`,
+      (p, n) => `主食にするなら、ここまで見たい。`
+    ]
+  }
 };
 
 /* ------------------------------------------------------------------ *
- * ボディ。軸ごとに、事実だけで構成したブロックを返す。
+ * 本文（Instagram）。軸 × 立場。
+ * 数値は必ず「食シーンを言ったあと」に置く。
  * ------------------------------------------------------------------ */
 export const BODIES = {
-  workout: (p, n, c) => [
-    `${p.nameJa}は、1食（${p.servingG}g）あたりたんぱく質${n.protein}gの${p.category}です。`,
-    `シェイカーもプロテインの粉もいりません。お鍋で${p.boilMin}分ゆでるだけ。`,
-    `ゆであがりは約${p.cookedWeightG}g。トレーニング後の食事に、主食としてそのまま組み込めます。`,
-    `脂質${n.fat}g、糖質${n.sugar}g、${n.kcal}kcal。数字は1食あたりの分析値です。`
-  ],
-  diet: (p, n, c) => [
-    `1食（${p.servingG}g）あたり ${n.kcal}kcal／たんぱく質${n.protein}g／脂質${n.fat}g／糖質${n.sugar}g／食物繊維${n.fiber}g。`,
-    `${p.nameJa}は${p.category}。主食のかわりに、そのまま1食として食べられます。`,
-    `ゆで時間は${p.boilMin}分、ゆであがりは約${p.cookedWeightG}g。食べごたえのある量です。`,
-    `我慢して量を減らすのではなく、食べるものを入れ替える。そういう考え方の麺です。`
-  ],
-  time: (p, n, c) => [
-    `つくり方は、沸かしたお湯で${p.boilMin}分ゆでるだけ。あとは好きな味付けで。`,
-    `${p.recipes.map((r) => `・${r.name}（${r.note}）`).join('\n')}`,
-    `どれも鍋ひとつ。1食（${p.servingG}g）あたりたんぱく質${n.protein}g、${n.kcal}kcalです。`
-  ],
-  trust: (p, n, c) => [
-    `原材料は「${p.ingredients}」。${c.freeFrom.join('・')}は使っていません。`,
-    `製造は${c.certifications.map((x) => x.code).join('・')}を取得した工場。日本人スタッフが品質を管理しています。`,
-    `1食（${p.servingG}g）あたりたんぱく質${n.protein}g／${n.kcal}kcal／糖質${n.sugar}g。`,
-    `毎日の主食にするものだからこそ、中身をそのままお見せします。`
-  ]
+  eat: {
+    change: (p, n, c) => [
+      `${p.nameJa}は、ゆでて食べる${p.category}。たんぱく質を「食事」として摂る方法です。`,
+      `1食（${p.servingG}g）でたんぱく質${n.protein}g。粉も水も計らず、鍋で${p.boilMin}分ゆでるだけ。`,
+      `ゆであがりは約${p.cookedWeightG}g、${n.kcal}kcal。丼に移せば、そのまま一食になります。`
+    ],
+    add: (p, n, c) => [
+      `飲む日と、食べる日。たんぱく質の摂り方を、その日の気分で選べます。`,
+      `${p.nameJa}は1食（${p.servingG}g）でたんぱく質${n.protein}g、${n.kcal}kcal。ゆで時間は${p.boilMin}分。`,
+      `いつものプロテインに、麺という選択肢を足すだけです。`
+    ]
+  },
+  staple: {
+    change: (p, n, c) => [
+      `この麺は、主食のほうにたんぱく質が入っています。おかずではなく、主食で摂るという考え方です。`,
+      `1食（${p.servingG}g）でたんぱく質${n.protein}g。おかずを積み増さなくても、その日の合計は変わります。`,
+      `ゆで時間は${p.boilMin}分、ゆであがりは約${p.cookedWeightG}g。脂質${n.fat}g、糖質${n.sugar}g、${n.kcal}kcalです。`
+    ],
+    add: (p, n, c) => [
+      `いつもの主食を、この麺に替えられる日をつくる。それだけの使い方です。`,
+      `1食（${p.servingG}g）あたり ${n.kcal}kcal／たんぱく質${n.protein}g／脂質${n.fat}g／糖質${n.sugar}g／食物繊維${n.fiber}g。`,
+      `${p.nameJa}は${p.category}。ゆで時間${p.boilMin}分、ゆであがり約${p.cookedWeightG}gで、食べごたえのある量です。`
+    ]
+  },
+  meal: {
+    change: (p, n, c) => [
+      `食事を数えている日でも、麺はそのまま数に入れられます。献立に、麺という選択肢を。`,
+      `1食（${p.servingG}g）で${n.kcal}kcal、たんぱく質${n.protein}g、糖質${n.sugar}g、食物繊維${n.fiber}g。`,
+      `ゆでて、好きな味付けで。麺のまま、その日の一食として組み込めます。`
+    ],
+    add: (p, n, c) => [
+      `「今日は麺にしよう」と言える日を、献立に増やすための一杯です。`,
+      `${p.nameJa}は1食${n.kcal}kcal、たんぱく質${n.protein}g。ゆであがり約${p.cookedWeightG}gあります。`,
+      `${p.recipes.map((r) => `・${r.name}（${r.note}）`).join('\n')}`,
+      `どれも鍋ひとつ、ゆで時間は${p.boilMin}分です。`
+    ]
+  },
+  daily: {
+    change: (p, n, c) => [
+      `毎日の主食にするものなので、中身はそのままお見せします。原材料は「${p.ingredients}」。`,
+      `${c.freeFrom.join('・')}は使っていません。製造は${c.certifications.map((x) => x.code).join('・')}を取得した工場です。`,
+      `1食（${p.servingG}g）あたりたんぱく質${n.protein}g／${n.kcal}kcal／糖質${n.sugar}g。`
+    ],
+    add: (p, n, c) => [
+      `続けるものは、素材で選びたい。${p.nameJa}の原材料は「${p.ingredients}」です。`,
+      `${c.freeFrom.join('・')}は不使用。日本人スタッフが品質を管理しています。`,
+      `1食（${p.servingG}g）でたんぱく質${n.protein}g、${n.kcal}kcal。ゆで時間は${p.boilMin}分です。`
+    ]
+  }
 };
 
 /* ------------------------------------------------------------------ *
- * 締め。CTA。
+ * 締め。押しつけず、次の行動だけ置く。
  * ------------------------------------------------------------------ */
 export const CLOSINGS = [
-  `飲むより、食べる。\nプロテインモンスターの新しい習慣を、プロフィールのリンクから。`,
+  `新しいプロテインのかたちを、プロフィールのリンクから。`,
   `気になる方は、プロフィールのリンクから商品ページへ。`,
-  `続けられるかどうかは、手間の少なさで決まると思っています。`,
   `詳しいスペックはプロフィールのリンクからご覧ください。`,
-  `どのアレンジが気になりますか？コメントで教えてください。`
+  `どのアレンジが気になりますか？コメントで教えてください。`,
+  `保存しておくと、次の献立で迷いません。`
 ];
 
 export const CLOSINGS_X = [
@@ -115,7 +191,6 @@ export const CLOSINGS_X = [
   `スペックの詳細はプロフィールのリンクへ。`,
   `気になった方はプロフィールのリンクをどうぞ。`
 ];
-
 /* ------------------------------------------------------------------ *
  * 注意喚起（アレルギー）。全投稿の末尾に必ず入れる。
  * ------------------------------------------------------------------ */
@@ -132,25 +207,25 @@ export const HASHTAGS = {
     sova: ['#プロテインそば', '#そば', '#蕎麦', '#和食']
   },
   byAxis: {
-    workout: [
-      '#筋トレ飯', '#トレーニング後の食事', '#プロテイン', '#たんぱく質補給',
+    eat: [
+      '#プロテイン', '#たんぱく質補給', '#食べるプロテイン', '#筋トレ飯',
       '#ジム飯', '#workout', '#筋トレ女子', '#筋トレ男子', '#ボディメイク'
     ],
-    diet: [
-      '#低糖質', '#低糖質生活', '#置き換え', '#主食置き換え', '#カロリー計算',
-      '#PFCバランス', '#food', '#ヘルシー志向', '#低カロリー'
+    staple: [
+      '#主食置き換え', '#置き換え', '#高たんぱく質', '#PFCバランス',
+      '#たんぱく質しっかり', '#食事改善', '#食生活', '#healthyfood', '#food'
     ],
-    time: [
-      '#時短レシピ', '#簡単レシピ', '#ズボラ飯', '#麺活', '#おうちごはん',
-      '#ランチ', '#レシピ', '#今日のごはん', '#料理好きな人と繋がりたい'
+    meal: [
+      '#低糖質', '#低カロリー', '#カロリー計算', '#麺活', '#おうちごはん',
+      '#ランチ', '#今日のごはん', '#献立', '#料理好きな人と繋がりたい'
     ],
-    trust: [
+    daily: [
       '#無添加', '#食の安全', '#原材料', '#植物性たんぱく質', '#プラントベース',
-      '#えんどう豆', '#スーパーフード', '#食品ロス削減', '#丁寧な暮らし'
+      '#えんどう豆', '#丁寧な暮らし', '#毎日の食事', '#素材で選ぶ'
     ]
   },
   // X は3個までに絞る
-  xPreferred: ['#プロテインモンスター', '#高タンパク麺', '#筋トレ飯', '#低糖質', '#時短レシピ']
+  xPreferred: ['#プロテインモンスター', '#高タンパク麺', '#食べるプロテイン', '#低糖質', '#主食置き換え']
 };
 
 /* ------------------------------------------------------------------ *
@@ -178,128 +253,260 @@ const chips = (p, n) => [
 ];
 
 export const OVERLAYS = {
-  workout: [
-    (p, n) => ({
-      template: 'stat',
-      eyebrow: '一味違うプロテイン麺',
-      lead: '一食に たんぱく質',
-      big: `${n.protein}g`,
-      suffix: 'の衝撃を。',
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'hook',
-      eyebrow: '一味違うプロテイン麺',
-      big: '飲むより、\n食べる。',
-      sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'band',
-      eyebrow: `1食${p.servingG}gあたり`,
-      big: 'シェイカーは、\nもう洗わない。',
-      sub: `お鍋で${p.boilMin}分ゆでるだけ。${p.nameJa}`,
-      chips: chips(p, n)
-    })
-  ],
+  eat: {
+    change: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '食べるプロテイン',
+        big: '飲むから、\n食べるへ。',
+        sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '食べるプロテイン',
+        lead: '一食に たんぱく質',
+        big: `${n.protein}g`,
+        suffix: 'これ、麺です。',
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: `1食${p.servingG}gあたり`,
+        big: 'プロテインを、\n食事にする。',
+        sub: `鍋で${p.boilMin}分ゆでるだけ。${p.nameJa}`,
+        chips: chips(p, n)
+      })
+    ],
+    add: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: 'もうひとつのプロテイン',
+        big: 'シェイクの日と、\n麺の日。',
+        sub: `${p.nameJa}／1食たんぱく質${n.protein}g`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: 'いつもの習慣に',
+        big: '麺という、\n選択肢を。',
+        sub: `ゆで時間${p.boilMin}分／${n.kcal}kcal`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '今日のたんぱく質',
+        lead: '昼の一杯で',
+        big: `${n.protein}g`,
+        suffix: '摂れました。',
+        chips: chips(p, n)
+      })
+    ]
+  },
 
-  diet: [
-    (p, n) => ({
-      template: 'stat',
-      eyebrow: '主食置き換えという選択',
-      lead: '1食あたり',
-      big: `${n.kcal}`,
-      suffix: `kcal でこの満足感。`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'band',
-      eyebrow: `1食${p.servingG}gあたり`,
-      big: '主食を、入れ替える。',
-      sub: `${n.kcal}kcal・たんぱく質${n.protein}g・糖質${n.sugar}g`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'hook',
-      eyebrow: '主食置き換えという選択',
-      big: '我慢ではなく、\n入れ替える。',
-      sub: `${p.nameJa}／1食${n.kcal}kcal`,
-      chips: chips(p, n)
-    })
-  ],
+  staple: {
+    change: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '主食で摂るという発想',
+        big: 'たんぱく質は、\n主食から。',
+        sub: `${p.nameJa}／1食${p.servingG}g`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: 'おかずを増やさずに',
+        lead: '主食だけで たんぱく質',
+        big: `${n.protein}g`,
+        suffix: '積み増し不要。',
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: `1食${p.servingG}gあたり`,
+        big: '主食が変われば、\n合計が変わる。',
+        sub: `${n.kcal}kcal・たんぱく質${n.protein}g・糖質${n.sugar}g`,
+        chips: chips(p, n)
+      })
+    ],
+    add: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '今日の主食に',
+        big: 'いつもの一食を、\nこの麺に。',
+        sub: `${p.nameJa}／${n.kcal}kcal`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '主食を変えるだけで',
+        lead: '一食に たんぱく質',
+        big: `${n.protein}g`,
+        suffix: `ゆで時間${p.boilMin}分。`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: '献立の選択肢に',
+        big: 'ごはんの日、\nこの麺の日。',
+        sub: `${p.nameJa}／ゆであがり約${p.cookedWeightG}g`,
+        chips: chips(p, n)
+      })
+    ]
+  },
 
-  time: [
-    (p, n) => ({
-      template: 'hook',
-      eyebrow: `ゆで時間${p.boilMin}分`,
-      big: 'お湯に入れて、\nそれだけ。',
-      sub: `${p.recipes[0].name}／${p.nameJa}`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'hook',
-      eyebrow: `ゆで時間${p.boilMin}分`,
-      big: 'めんつゆだけで\nいい日がある。',
-      sub: `鍋ひとつ、${p.boilMin}分。${p.nameJa}`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'band',
-      eyebrow: '鍋ひとつでできる',
-      big: `${p.recipes[0].name}`,
-      sub: `${p.recipes[0].note}／ゆで時間${p.boilMin}分`,
-      chips: chips(p, n)
-    })
-  ],
+  meal: {
+    change: [
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '麺のある食事管理',
+        lead: '1食あたり',
+        big: `${n.kcal}`,
+        suffix: 'kcal。麺のまま。',
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '数える日の主食',
+        big: '麺を選べる、\n食事管理へ。',
+        sub: `${p.nameJa}／1食${n.kcal}kcal`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: `1食${p.servingG}gあたり`,
+        big: '数えながら、\n麺を食べる。',
+        sub: `${n.kcal}kcal・たんぱく質${n.protein}g・糖質${n.sugar}g`,
+        chips: chips(p, n)
+      })
+    ],
+    add: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '今日の献立に',
+        big: '今日は麺にしよう、\nと言える日。',
+        sub: `${p.nameJa}／ゆで時間${p.boilMin}分`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: '鍋ひとつでできる',
+        big: `${p.recipes[0].name}`,
+        sub: `${p.recipes[0].note}／ゆで時間${p.boilMin}分`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '麺の日を増やす',
+        lead: '一食に たんぱく質',
+        big: `${n.protein}g`,
+        suffix: `ゆであがり約${p.cookedWeightG}g。`,
+        chips: chips(p, n)
+      })
+    ]
+  },
 
-  trust: [
-    (p, n) => ({
-      template: 'band',
-      eyebrow: '原材料はシンプルに',
-      big: '保存料・着色料\n不使用。',
-      sub: `${p.nameJa}／${p.category}`,
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'band',
-      eyebrow: '国際認証取得工場で製造',
-      big: 'つくる場所から、\n見せます。',
-      sub: 'FSSC22000・BRC・FDA の基準を満たした工場',
-      chips: chips(p, n)
-    }),
-    (p, n) => ({
-      template: 'stat',
-      eyebrow: '一味違うプロテイン麺',
-      lead: '一食に たんぱく質',
-      big: `${n.protein}g`,
-      suffix: '国際認証取得工場で製造。',
-      chips: chips(p, n)
-    })
-  ]
+  daily: {
+    change: [
+      (p, n) => ({
+        template: 'band',
+        eyebrow: '原材料はシンプルに',
+        big: '中身は、\n全部書きます。',
+        sub: `${p.nameJa}／${p.category}`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: '国際認証取得工場で製造',
+        big: 'つくる場所から、\n選びました。',
+        sub: 'FSSC22000・BRC・FDA の基準を満たした工場',
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '毎日のものだから',
+        big: 'シンプルな\n原材料で。',
+        sub: `原材料は${p.ingredients.split('、')[0]}から／${p.nameJa}`,
+        chips: chips(p, n)
+      })
+    ],
+    add: [
+      (p, n) => ({
+        template: 'hook',
+        eyebrow: '続けるものだから',
+        big: '素材で、\n選ぶ。',
+        sub: `${p.nameJa}／${p.category}`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'band',
+        eyebrow: '長く食べるために',
+        big: '毎日の一食に、\n置いておけるもの。',
+        sub: `保存料・着色料・人工甘味料は不使用`,
+        chips: chips(p, n)
+      }),
+      (p, n) => ({
+        template: 'stat',
+        eyebrow: '主食にするなら',
+        lead: '一食に たんぱく質',
+        big: `${n.protein}g`,
+        suffix: '国際認証取得工場で製造。',
+        chips: chips(p, n)
+      })
+    ]
+  }
 };
 
 /* ------------------------------------------------------------------ *
  * X 用の短いボディ。Instagram の BODIES は長すぎるため専用に持つ。
  * ------------------------------------------------------------------ */
 export const BODIES_X = {
-  workout: (p, n) => [
-    `1食（${p.servingG}g）でたんぱく質${n.protein}g、${n.kcal}kcal。ゆで時間は${p.boilMin}分です。`,
-    `${p.nameJa}は${p.category}。シェイカー不要、ゆでるだけでたんぱく質${n.protein}g。`,
-    `たんぱく質${n.protein}g・脂質${n.fat}g・糖質${n.sugar}g。1食（${p.servingG}g）あたりの分析値です。`
-  ],
-  diet: (p, n) => [
-    `1食（${p.servingG}g）あたり${n.kcal}kcal／たんぱく質${n.protein}g／糖質${n.sugar}g。`,
-    `主食のかわりに1食として。ゆであがり約${p.cookedWeightG}g、${n.kcal}kcalです。`,
-    `${n.kcal}kcalでたんぱく質${n.protein}g。主食を入れ替えるという考え方の麺です。`
-  ],
-  time: (p, n) => [
-    `お湯で${p.boilMin}分ゆでて、好きな味付けで。それだけで1食たんぱく質${n.protein}g。`,
-    `おすすめは${p.recipes[0].name}（${p.recipes[0].note}）。鍋ひとつ、${p.boilMin}分。`,
-    `${p.recipes[1].name}も${p.recipes[2].name}も鍋ひとつ。ゆで時間は${p.boilMin}分です。`
-  ],
-  trust: (p, n) => [
-    `保存料・酸化防止剤・香料・人工甘味料・着色料は不使用。1食たんぱく質${n.protein}gです。`,
-    `製造はFSSC22000・BRC・FDAの基準を満たした工場。1食（${p.servingG}g）でたんぱく質${n.protein}g。`,
-    `原材料はシンプルに。${n.kcal}kcal、たんぱく質${n.protein}g、糖質${n.sugar}g（1食あたり）。`
-  ]
+  eat: {
+    change: (p, n) => [
+      `ゆでて食べる${p.category}です。1食（${p.servingG}g）でたんぱく質${n.protein}g、${n.kcal}kcal。`,
+      `粉も水も計らず、鍋で${p.boilMin}分。1食たんぱく質${n.protein}gです。`,
+      `たんぱく質${n.protein}g・脂質${n.fat}g・糖質${n.sugar}g。1食（${p.servingG}g）あたりの分析値です。`
+    ],
+    add: (p, n) => [
+      `飲む日と、食べる日を分ける。1食でたんぱく質${n.protein}g、ゆで時間${p.boilMin}分。`,
+      `いつものプロテインに、麺という選択肢を。1食${n.kcal}kcal、たんぱく質${n.protein}g。`,
+      `ゆであがり約${p.cookedWeightG}g。${n.kcal}kcalで、そのまま一食になります。`
+    ]
+  },
+  staple: {
+    change: (p, n) => [
+      `おかずを積み増さずに、主食だけでたんぱく質${n.protein}g（1食あたり）。`,
+      `主食が変われば1日の合計が変わります。1食${n.kcal}kcal、たんぱく質${n.protein}g。`,
+      `ゆで時間${p.boilMin}分、ゆであがりは約${p.cookedWeightG}g。${n.kcal}kcalです。`
+    ],
+    add: (p, n) => [
+      `いつもの一食をこの麺に。1食${n.kcal}kcal／たんぱく質${n.protein}g／糖質${n.sugar}g。`,
+      `主食を変えるだけで、たんぱく質${n.protein}g。ゆで時間は${p.boilMin}分です。`,
+      `ごはんの日、パスタの日、この麺の日。1食${n.kcal}kcal、ゆであがり約${p.cookedWeightG}g。`
+    ]
+  },
+  meal: {
+    change: (p, n) => [
+      `1食${n.kcal}kcal／たんぱく質${n.protein}g／糖質${n.sugar}g。麺のまま数に入れられます。`,
+      `数えながら麺を食べる。${n.kcal}kcalでたんぱく質${n.protein}g、食物繊維${n.fiber}gです。`,
+      `ゆであがり約${p.cookedWeightG}gで${n.kcal}kcal。その日の一食として組み込めます。`
+    ],
+    add: (p, n) => [
+      `今日は麺にしよう、と言える日に。1食${n.kcal}kcal、たんぱく質${n.protein}gです。`,
+      `おすすめは${p.recipes[0].name}（${p.recipes[0].note}）。鍋ひとつ、ゆで時間${p.boilMin}分。`,
+      `${p.recipes[1].name}も${p.recipes[2].name}も鍋ひとつ。1食たんぱく質${n.protein}gです。`
+    ]
+  },
+  daily: {
+    change: (p, n) => [
+      `保存料・香料・人工甘味料・着色料は不使用。1食たんぱく質${n.protein}gです。`,
+      `製造はFSSC22000・BRC・FDA取得工場。1食でたんぱく質${n.protein}gです。`,
+      `原材料はシンプルに。1食（${p.servingG}g）で${n.kcal}kcal、たんぱく質${n.protein}g。`
+    ],
+    add: (p, n) => [
+      `続けるものは素材で選ぶ。原材料はシンプルに、1食たんぱく質${n.protein}gです。`,
+      `毎日の一食に置いておけるものを。${n.kcal}kcal、たんぱく質${n.protein}g、糖質${n.sugar}g。`,
+      `主食にするなら中身まで。保存料・着色料・人工甘味料は使っていません。`
+    ]
+  }
 };

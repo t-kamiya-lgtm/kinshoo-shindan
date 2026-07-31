@@ -6,7 +6,7 @@
 
 import { PRODUCTS, COMMON } from './data/products.js';
 import {
-  AXES, HOOKS, BODIES, BODIES_X, CLOSINGS, CLOSINGS_X,
+  AXES, STANCES, HOOKS, BODIES, BODIES_X, CLOSINGS, CLOSINGS_X,
   ALLERGY_NOTE, HASHTAGS, OVERLAYS
 } from './data/copy.js';
 import { checkCompliance } from './compliance.js';
@@ -82,16 +82,16 @@ export function buildHashtags(rng, { sku, axis, platform }) {
 
 /* -------------------------- キャプション -------------------------- */
 
-function buildCaption(rng, { product, axis, platform }) {
+function buildCaption(rng, { product, axis, stance, platform }) {
   const p = product;
   const n = p.nutrition;
-  const hook = pick(rng, HOOKS[axis])(p, n);
-  const bodyBlocks = BODIES[axis](p, n, COMMON);
+  const hook = pick(rng, HOOKS[axis][stance])(p, n);
+  const bodyBlocks = BODIES[axis][stance](p, n, COMMON);
 
   if (platform === 'x') {
     // 日本語主体の投稿として 140 字前後に収める。本文は専用の1行版を使う。
     const closing = pick(rng, CLOSINGS_X);
-    const body = pick(rng, BODIES_X[axis](p, n));
+    const body = pick(rng, BODIES_X[axis][stance](p, n));
     return [hook, '', body, '', closing].join('\n');
   }
 
@@ -108,18 +108,18 @@ function buildCaption(rng, { product, axis, platform }) {
  * 実際にどのファイルを使うかは、ダッシュボード側が画像ライブラリのタグと
  * このプランの好みタグを突き合わせて決める（library.js の pickImage）。
  */
-function buildImagePlan(rng, { product, axis, platform }) {
+function buildImagePlan(rng, { product, axis, stance, platform }) {
   const mode = rng() < 0.5 ? 'composite' : 'raw';
   // 文字は「そのまま」の案でも用意しておく。ダッシュボードで「文字を載せる」に
   // 切り替えたときに、載せる文字が無いと何も起きないため。
-  const overlay = pick(rng, OVERLAYS[axis])(product, product.nutrition);
+  const overlay = pick(rng, OVERLAYS[axis][stance])(product, product.nutrition);
 
   // 軸ごとに相性のよい被写体
   const preferScene = {
-    workout: ['cooked', 'raw', 'package'],
-    diet: ['cooked', 'lifestyle', 'package'],
-    time: ['cooking', 'cooked', 'lifestyle'],
-    trust: ['raw', 'package', 'ingredient']
+    eat: ['cooked', 'raw', 'package'],
+    staple: ['cooked', 'lifestyle', 'package'],
+    meal: ['cooked', 'lifestyle', 'cooking'],
+    daily: ['raw', 'package', 'ingredient']
   }[axis];
 
   return {
@@ -162,10 +162,15 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, fo
   if (forceSku && PRODUCTS[forceSku]) skuId = forceSku;
   const product = PRODUCTS[skuId];
 
+  // 語り口。「摂り方を変える」か「習慣に足す」か。
+  // 同じ軸でも日によって言い方が変わるようにする。
+  const stance = STANCES[rng() < 0.5 ? 0 : 1].id;
+  const stanceDef = STANCES.find((x) => x.id === stance);
+
   // 画像プランを先に決めるのは、乱数の消費順を媒体間でそろえるため。
   // キャプションは媒体で長さが違い、引く回数も変わるので、後ろに置く。
-  const image = buildImagePlan(rng, { product, axis, platform });
-  const caption = buildCaption(rng, { product, axis, platform });
+  const image = buildImagePlan(rng, { product, axis, stance, platform });
+  const caption = buildCaption(rng, { product, axis, stance, platform });
   const hashtags = buildHashtags(rng, { sku: skuId, axis, platform });
 
   const fullText = platform === 'ig'
@@ -179,6 +184,8 @@ function buildProposal(dateKey, platform, variant = 0, salt = 0, sync = true, fo
     variant,
     axis,
     axisLabel: axisDef.label,
+    stance,
+    stanceLabel: stanceDef.label,
     sku: skuId,
     skuLabel: product.nameJa,
     caption,
@@ -212,4 +219,4 @@ export function generateDailyPlan(dateKey = jstDateKey(), variants = { ig: 0, x:
   return { dateKey, sync, generatedAt: new Date().toISOString(), posts: [ig, x] };
 }
 
-export { buildProposal, AXES, PRODUCTS };
+export { buildProposal, AXES, STANCES, PRODUCTS };

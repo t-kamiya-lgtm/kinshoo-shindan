@@ -341,6 +341,7 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
       el('div', { class: `platform ${post.platform}` }, el('span', { class: 'dot' }), platformLabel),
       el('div', { class: 'chips' },
         el('span', { class: 'chip accent' }, post.axisLabel),
+        post.stanceLabel ? el('span', { class: 'chip' }, post.stanceLabel) : null,
         el('span', { class: 'chip' }, post.skuLabel),
         el('span', { class: 'chip' }, isComposite ? '写真＋文字合成' : '写真そのまま'),
         posted ? el('span', { class: 'chip accent' }, '投稿済み') : null,
@@ -759,7 +760,7 @@ async function renderRecipeView() {
   // ハッシュタグはレシピ寄りに。キーで決まるので毎回同じ並びになる。
   const tags = [];
   for (const t of [...HASHTAGS.core, ...HASHTAGS.bySku[recipe.sku],
-    ...HASHTAGS.byAxis.time, ...HASHTAGS.byAxis.diet]) {
+    ...HASHTAGS.byAxis.meal, ...HASHTAGS.byAxis.staple]) {
     if (!tags.includes(t)) tags.push(t);
     if (tags.length >= 20) break;
   }
