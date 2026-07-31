@@ -334,6 +334,8 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
   const usage = imageUsage().get(imageItem ? imageItem.key : '');
   const imageDup = usage && daysAgo(usage.lastAt) <= RECENT_IMAGE_DAYS;
   const sameAsSibling = imageItem && siblingKeys.includes(imageItem.key);
+  const edit = edits[post.id] || {};
+  const edited = edit.caption !== undefined || edit.hashtags !== undefined;
 
   /* --- ヘッダ --- */
   card.append(
@@ -347,7 +349,10 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
         posted ? el('span', { class: 'chip accent' }, '投稿済み') : null,
         hookDup ? el('span', { class: 'chip dup' }, `書き出し重複（${hookDup.dateKey}）`) : null,
         imageDup ? el('span', { class: 'chip dup' }, `この写真は${Math.round(daysAgo(usage.lastAt))}日前にも使用`) : null,
-        sameAsSibling ? el('span', { class: 'chip dup' }, 'もう1本と同じ写真') : null
+        sameAsSibling ? el('span', { class: 'chip dup' }, 'もう1本と同じ写真') : null,
+        // 本文を手で直していると、生成側の文面を更新しても画面は変わらない。
+        // 気づけないと「反映されていない」と見えるので、必ず表示する。
+        edited ? el('span', { class: 'chip dup' }, '本文を編集済み') : null
       )
     )
   );
@@ -568,9 +573,27 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
     renderCompliance();
   });
 
+  /** 手で直した本文・タグを捨てて、生成された文面に戻す */
+  const resetCaption = () => {
+    if (!confirm('この投稿の本文とハッシュタグを、自動生成された内容に戻します。よろしいですか？')) return;
+    const e = edits[post.id];
+    if (e) {
+      delete e.caption;
+      delete e.hashtags;
+      if (!Object.keys(e).length) delete edits[post.id];
+      save(LS.edits, edits);
+    }
+    refresh();
+  };
+
   card.append(
     el('div', { class: 'editor' },
-      el('label', {}, 'キャプション'), captionArea,
+      el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' },
+        el('label', {}, 'キャプション'),
+        edited
+          ? el('button', { class: 'btn ghost small', onclick: resetCaption }, '本文を自動生成に戻す')
+          : null),
+      captionArea,
       el('label', {}, 'ハッシュタグ（スペース区切り）'), tagsInput,
       counter
     ),
