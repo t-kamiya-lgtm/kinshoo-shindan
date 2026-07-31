@@ -825,20 +825,39 @@ async function renderRecipeView() {
     counter.classList.toggle('over', n > IG_CAPTION_MAX);
 
     const r = checkCompliance(text, { includeOptional: settings.prMode });
+
+    // 原稿のまま使う判断をした語は「確認済み」として分ける。
+    // チェッカー自体は緩めない。緩めると、今後の新しい文面で同じ語が
+    // 出てきたときに気づけなくなる。
+    const reviewedTerms = (recipe.reviewed && recipe.reviewed.terms) || [];
+    const isReviewed = (f) => reviewedTerms.includes(f.matched);
+    const blocks = r.blocks.filter((f) => !isReviewed(f));
+    const warns = r.warns.filter((f) => !isReviewed(f));
+    const reviewed = [...r.blocks, ...r.warns].filter(isReviewed);
+
     compBox.replaceChildren();
-    const state = r.blocks.length ? 'block' : r.warns.length ? 'warn' : 'ok';
+    const state = blocks.length ? 'block' : warns.length ? 'warn' : 'ok';
     compBox.append(el('div', { class: `comp-head ${state}` },
-      r.blocks.length ? `要修正 ${r.blocks.length}件`
-        : r.warns.length ? `要確認 ${r.warns.length}件`
-          : '薬機法・景表法チェック：問題なし'));
-    for (const f of [...r.blocks, ...r.warns]) {
+      blocks.length ? `要修正 ${blocks.length}件`
+        : warns.length ? `要確認 ${warns.length}件`
+          : '薬機法・景表法チェック：問題なし'
+      + (reviewed.length ? `（確認済みの表現 ${reviewed.length}件）` : '')));
+    for (const f of [...blocks, ...warns]) {
       compBox.append(el('div', { class: 'comp-item' },
         el('span', { class: 'law' }, `[${f.law}]`),
         el('span', { class: 'matched' }, f.matched),
         ' ' + f.reason,
         el('span', { class: 'fix' }, '→ ' + f.fix)));
     }
-    $('#recipe-download').disabled = r.blocks.length > 0;
+    for (const f of reviewed) {
+      compBox.append(el('div', { class: 'comp-item' },
+        el('span', { class: 'law' }, `[${f.law}]`),
+        el('span', { class: 'matched' }, f.matched),
+        ' ' + f.reason,
+        el('span', { class: 'fix' },
+          `→ 原稿のまま使う判断です（${recipe.reviewed.by}／${recipe.reviewed.at}）`)));
+    }
+    $('#recipe-download').disabled = blocks.length > 0;
   }
 
   ta.oninput = () => {
