@@ -684,18 +684,31 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
 
 const IG_CAPTION_MAX = 2200;
 
-/** レシピの写真候補。タグでSKUが一致するものを前に出す。 */
+/**
+ * レシピの写真候補。
+ * そのレシピを撮った写真だけを返す。別の料理の写真は混ぜない。
+ * 一致しなければ空を返し、画面側で「見つからない」と伝える。
+ */
 function recipePhotoOptions(recipe) {
+  if (!recipeData || !recipeData.matchRecipePhotos) return [];
+  const found = recipeData.matchRecipePhotos(recipe, stored);
+  // できあがり写真を先に。材料写真はタイトル面には向かない。
   const tags = lib.loadTags();
-  const score = (item) => {
-    const t = tags[item.key] || [];
-    let v = 0;
-    if (t.includes(recipe.sku)) v += 3;
-    if (t.includes('both')) v += 1;
-    if (t.includes('cooked')) v += 2;
-    return -v;
-  };
-  return [...stored].sort((a, b) => score(a) - score(b) || a.key.localeCompare(b.key));
+  const score = (item) => ((tags[item.key] || []).includes('cooked') ? -1 : 0);
+  return found.sort((a, b) => score(a) - score(b) || a.key.localeCompare(b.key));
+}
+
+/** ④のサムネ用に、他のレシピのできあがり写真を集める */
+function otherRecipePhotos(currentKey, limit = 3) {
+  if (!recipeData || !recipeData.matchRecipePhotos) return [];
+  const out = [];
+  for (const r of recipeData.RECIPES) {
+    if (r.key === currentKey) continue;
+    const hit = recipeData.matchRecipePhotos(r, stored)[0];
+    if (hit) out.push(hit);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 async function renderRecipeView() {
@@ -747,17 +760,27 @@ async function renderRecipeView() {
     }, o.key))
   );
 
-  notice.hidden = stored.length > 0;
+  // このレシピの写真が見つからないことは、はっきり伝える。
+  // 黙って別の料理の写真を出すと、投稿してから気づくことになる。
   if (!stored.length) {
+    notice.hidden = false;
     notice.textContent = '画像ライブラリが空です。①のタイトル画像に写真を使うには、先に画像を取り込んでください。②③④は写真なしでも書き出せます。';
+  } else if (!options.length) {
+    notice.hidden = false;
+    notice.textContent =
+      `このレシピの写真がライブラリに見つかりません（探した名前：${recipe.photo ? recipe.photo.prefix : '—'}）。`
+      + '別の料理の写真は使わない決まりなので、①は写真なしで書き出します。'
+      + 'レシピの写真を取り込むか、ファイル名をご確認ください。';
+  } else {
+    notice.hidden = true;
   }
 
   const heroItem = stored.find((x) => x.key === chosenKey) || null;
   const heroBlob = heroItem ? await lib.blobOf(heroItem) : null;
   const heroImg = heroBlob ? await composer.loadBitmap(heroBlob) : null;
 
-  // ④のサムネは、他のレシピのできあがり写真を使う
-  const thumbItems = options.filter((o) => o.key !== chosenKey).slice(0, 3);
+  // ④のサムネは、他のレシピのできあがり写真を使う（レシピ写真だけ）
+  const thumbItems = otherRecipePhotos(recipe.key, 3);
   const thumbs = [];
   for (const t of thumbItems) {
     const tb = await lib.blobOf(t);

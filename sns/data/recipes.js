@@ -21,6 +21,8 @@
 export const RECIPES = [
   {
     key: 'M04', no: 4, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '04_明太もち冷製', keywords: ['明太'] },
     label: '', labelAccent: '',
     title: '明太もちの極み冷製麺',
     summaryLead: '【糖質プラスワン：切り餅】',
@@ -45,6 +47,8 @@ export const RECIPES = [
   },
   {
     key: 'M12', no: 12, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '12_サラダパスタ', keywords: ['サラダパスタ'] },
     label: '超速！', labelAccent: '',
     title: 'チキンサラダパスタ',
     summaryLead: '',
@@ -69,6 +73,8 @@ export const RECIPES = [
   },
   {
     key: 'M15', no: 15, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '15_冷やし豆乳担々麺', keywords: ['冷やし豆乳', '担々'] },
     label: '絶品！', labelAccent: '',
     title: '冷やし豆乳担々麺のマッスル・リフレッシュ',
     summaryLead: '',
@@ -106,6 +112,8 @@ export const RECIPES = [
   },
   {
     key: 'M17', no: 17, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '17_なめこ長芋おろしポン酢', keywords: ['なめこ'] },
     label: '', labelAccent: '',
     title: 'なめこと長芋とろろのおろしポン酢麺',
     summaryLead: '【糖質プラスワン：長芋（とろろ）】',
@@ -131,6 +139,8 @@ export const RECIPES = [
   },
   {
     key: 'M20', no: 20, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '20_りんごキムチビビン麺', keywords: ['ビビン', 'キムチ'] },
     label: 'りんごとキムチ！', labelAccent: '',
     title: 'ゆで卵の韓国風ピリ辛ビビン麺',
     summaryLead: '【糖質プラスワン：りんご＆キムチ】',
@@ -159,6 +169,8 @@ export const RECIPES = [
   },
   {
     key: 'M21', no: 21, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '21_冷やご飯そばめし', keywords: ['そばめし'] },
     label: '悪魔的旨さ！', labelAccent: '',
     title: '冷やご飯で作るマッスルそばめし',
     summaryLead: '【糖質プラスワン：冷やご飯（残りご飯）】',
@@ -185,6 +197,8 @@ export const RECIPES = [
   },
   {
     key: 'M22', no: 22, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '22_ポテトガリバタ醤油', keywords: ['ガリバタ'] },
     label: '', labelAccent: '',
     title: 'ほくほくポテトのガリバタ醤油麺',
     summaryLead: '【糖質プラスワン：じゃがいも】',
@@ -212,6 +226,8 @@ export const RECIPES = [
   },
   {
     key: 'M23', no: 23, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '23_さつまいもデリサラダ', keywords: ['さつまいも'] },
     label: 'デリ風！', labelAccent: 'デリ',
     title: 'さつまいもとハニーマスタードのサラダ麺',
     summaryLead: '【糖質プラスワン：さつまいも＆はちみつ】',
@@ -239,6 +255,8 @@ export const RECIPES = [
   },
   {
     key: 'M24', no: 24, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '24_なす甘味噌だれ', keywords: ['甘味噌'] },
     label: '', labelAccent: '',
     title: 'トロトロ茄子の甘味噌だれ麺（田楽風）',
     summaryLead: '【糖質プラスワン：みりん＆砂糖（甘味噌だれ）】',
@@ -268,6 +286,8 @@ export const RECIPES = [
   },
   {
     key: 'M25', no: 25, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '25_ケチャップナポリタン', keywords: ['ナポリタン'] },
     label: '喫茶店風！', labelAccent: '喫茶店',
     title: '玉ねぎとケチャップの絶品ナポリタン',
     summaryLead: '【糖質プラスワン：玉ねぎ＆ケチャップ】',
@@ -294,6 +314,8 @@ export const RECIPES = [
   },
   {
     key: 'M26', no: 26, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '26_コーンポタージュ麺', keywords: ['コーンポタージュ'] },
     label: '混ぜるだけ！', labelAccent: '',
     title: '濃厚コーンポタージュスープ麺',
     summaryLead: '【糖質プラスワン：コーンポタージュの素】',
@@ -317,6 +339,8 @@ export const RECIPES = [
   },
   {
     key: 'M27', no: 27, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '27_かぼちゃスイーツ麺', keywords: ['かぼちゃ'] },
     label: 'スイーツ感覚！', labelAccent: '',
     title: 'かぼちゃマッシュのハニー醤油麺',
     summaryLead: '【糖質プラスワン：かぼちゃ＆はちみつ】',
@@ -342,6 +366,8 @@ export const RECIPES = [
   },
   {
     key: 'M28', no: 28, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '28_オートミール雑炊', keywords: ['オートミール'] },
     label: '満腹確定！', labelAccent: '',
     title: 'オートミールとわかめの出汁ぞうすい麺',
     summaryLead: '【糖質プラスワン：オートミール】',
@@ -368,6 +394,8 @@ export const RECIPES = [
   },
   {
     key: 'M30', no: 30, sku: 'monster',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '30_屋台焼きうどん風', keywords: ['焼きうどん', '屋台'] },
     label: '屋台の味！', labelAccent: '',
     title: 'みりんと天かすの甘辛焼きうどん風',
     summaryLead: '【糖質プラスワン：みりん＆天かす＆ケチャップ】',
@@ -397,6 +425,8 @@ export const RECIPES = [
   },
   {
     key: 'S01', no: 1, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '1. トマトとアボカドの塩レモン冷製蕎麦', keywords: ['トマト'] },
     label: '', labelAccent: '',
     title: 'トマトとアボカドの塩レモン冷製蕎麦',
     summaryLead: '【良質な脂質とビタミンをプラス】',
@@ -422,6 +452,8 @@ export const RECIPES = [
   },
   {
     key: 'S02', no: 2, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '2. オクラと長芋のネバネバ冷やし蕎麦', keywords: ['オクラ'] },
     label: '', labelAccent: '',
     title: 'オクラと長芋のネバネバ冷やし蕎麦',
     summaryLead: '【良質な炭水化物と風味をプラス】',
@@ -446,6 +478,8 @@ export const RECIPES = [
   },
   {
     key: 'S03', no: 3, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '3. すだち（レモン）おろし冷やかけ蕎麦', keywords: ['すだち'] },
     label: '', labelAccent: '',
     title: 'すだち（レモン）おろし冷やかけ蕎麦',
     summaryLead: '【脂質とコクをプラス】',
@@ -470,6 +504,8 @@ export const RECIPES = [
   },
   {
     key: 'S04', no: 4, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '4. なすと生姜のポン酢ごま油和え蕎麦', keywords: ['生姜'] },
     label: '', labelAccent: '',
     title: 'なすと生姜のポン酢ごま油和え蕎麦',
     summaryLead: '【脂質と旨味をプラス】',
@@ -494,6 +530,8 @@ export const RECIPES = [
   },
   {
     key: 'S05', no: 5, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '5. きのことネギの温蕎麦', keywords: ['きのこ'] },
     label: '', labelAccent: '',
     title: 'ごま油香る きのことネギの温蕎麦',
     summaryLead: '【食物繊維と風味をプラス】 きのこをたっぷり加えることで、女性に嬉しい食物繊維（C）をしっかりかさ増し。麺単体では不足しがちな脂質を、ごま油の豊かな風味（F）で補うことで、温かいお蕎麦に深いコクと満足感を与えます。',
@@ -520,6 +558,8 @@ export const RECIPES = [
   },
   {
     key: 'S06', no: 6, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '6. とろろ昆布と梅干しの温蕎麦', keywords: ['とろろ昆布', '梅干'] },
     label: '', labelAccent: '',
     title: 'とろろ昆布と梅干しのさっぱり温蕎麦',
     summaryLead: '【包丁不要で旨味をプラス】',
@@ -545,6 +585,8 @@ export const RECIPES = [
   },
   {
     key: 'S07', no: 7, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '7. キャベツと塩昆布の旨ごま油まぜ蕎麦', keywords: ['塩昆布'] },
     label: '', labelAccent: '',
     title: 'キャベツと塩昆布の旨ごま油まぜ蕎麦',
     summaryLead: '【食物繊維のボリュームと風味をプラス】',
@@ -570,6 +612,8 @@ export const RECIPES = [
   },
   {
     key: 'S08', no: 8, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '8. わかめとラー油の温蕎麦', keywords: ['ラー油'] },
     label: '', labelAccent: '',
     title: 'たっぷりわかめとラー油の温蕎麦',
     summaryLead: '【ミネラルとジャンクな風味をプラス】',
@@ -595,6 +639,8 @@ export const RECIPES = [
   },
   {
     key: 'S09', no: 9, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '9. アボカドと海苔のわさび醤油和え蕎麦', keywords: ['わさび', '海苔'] },
     label: '', labelAccent: '',
     title: 'アボカドと海苔のわさび醤油和え蕎麦',
     summaryLead: '【美容に良い脂質と和風テイストをプラス】',
@@ -620,6 +666,8 @@ export const RECIPES = [
   },
   {
     key: 'S10', no: 10, sku: 'sova',
+    // 画像の紐付け。原稿ファイル名の頭と、写真を見分ける手がかり。
+    photo: { prefix: '10. 大根おろしとネギのたぬき温蕎麦', keywords: ['たぬき'] },
     label: '', labelAccent: '',
     title: '大根おろしとネギのたぬき温蕎麦',
     summaryLead: '【消化を助ける炭水化物と脂質をプラス】',
@@ -680,4 +728,41 @@ export function resolveRecipe(recipe, product) {
     boilText,
     steps: recipe.steps.map((s) => s.replace(/\{boil\}/g, boilText))
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * 画像とレシピの紐付け
+ *
+ * レシピ投稿には、そのレシピを撮った写真だけを使う。
+ * 関係のない料理写真を混ぜないため、一致しなければ「なし」を返す。
+ * 手がかりは原稿ファイル名の頭（例 25_ケチャップナポリタン）と、
+ * 料理を見分ける語（例 ナポリタン）。番号だけで判定しないのは、
+ * モンスターの 04 とソバの 4 のように番号が重なるため。
+ * ------------------------------------------------------------------ */
+
+/** 比較用にファイル名をならす（拡張子・記号・全角半角の差を吸収） */
+function normalizeForMatch(name) {
+  return String(name)
+    .replace(/^.*[\\/]/, '')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[\s_\-.（）()［］\[\]]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * そのレシピの写真だけを返す。
+ * @param {object} recipe
+ * @param {Array<{key: string}>} stored 画像ライブラリの一覧
+ */
+export function matchRecipePhotos(recipe, stored) {
+  if (!recipe || !recipe.photo || !stored) return [];
+  const prefix = normalizeForMatch(recipe.photo.prefix);
+  const keywords = (recipe.photo.keywords || []).map(normalizeForMatch);
+
+  return stored.filter((item) => {
+    const name = normalizeForMatch(item.key);
+    if (prefix && name.includes(prefix)) return true;
+    // 手がかりの語で拾う。番号が一致していれば、より確からしい。
+    return keywords.some((k) => k && name.includes(k));
+  });
 }
