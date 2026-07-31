@@ -95,7 +95,9 @@ export async function inspectFiles(fileList) {
 /**
  * File[] を取り込む。カタログ外のファイルも受け入れる（追加素材として登録）。
  * @param {FileList|File[]} fileList
- * @param {{overwrite?: boolean}} opts overwrite が false のときは同名を飛ばす
+ * @param {{overwrite?: boolean, onProgress?: (done: number, total: number, name: string) => void}} opts
+ *   overwrite が false のときは同名を飛ばす。
+ *   共有モードでは1枚ずつ Drive へ送るため時間がかかる。onProgress で進み具合を返す。
  */
 export async function importFiles(fileList, opts = {}) {
   const overwrite = opts.overwrite !== false;
@@ -140,6 +142,7 @@ export async function importFiles(fileList, opts = {}) {
     result.added++;
     if (cat) result.matched++;
     else result.extras.push(file.name);
+    if (opts.onProgress) opts.onProgress(result.added + result.skippedDup.length, files.length, file.name);
   }
   return result;
 }

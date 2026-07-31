@@ -103,6 +103,18 @@ let logos = { onPhoto: null, onLight: null, hasOnPhoto: false, hasOnLight: false
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+/** 時間のかかる処理のあいだ出しっぱなしにする表示 */
+function showProgress(msg) {
+  const el2 = $('#toast');
+  el2.textContent = msg;
+  el2.hidden = false;
+  clearTimeout(el2._t);
+  return {
+    update(text) { el2.textContent = text; },
+    done() { el2.hidden = true; }
+  };
+}
+
 function toast(msg) {
   const el = $('#toast');
   el.textContent = msg;
@@ -938,8 +950,22 @@ function setupDropzone() {
       overwrite = choice === 'overwrite';
     }
 
-    toast('取り込み中…');
-    const r = await lib.importFiles(list, { overwrite });
+    // 共有モードでは Drive へ1枚ずつ送るので時間がかかる。
+    // 何も出ないと固まったように見えるため、進み具合を出し続ける。
+    const progress = showProgress('取り込み中…');
+    let r;
+    try {
+      r = await lib.importFiles(list, {
+        overwrite,
+        onProgress: (done, total, name) => progress.update(`取り込み中… ${done} / ${total}　${name}`)
+      });
+    } catch (err) {
+      progress.done();
+      console.error('取り込みに失敗しました:', err);
+      toast(`取り込みに失敗しました：${err && err.message ? err.message : err}`);
+      return;
+    }
+    progress.done();
     stored = await lib.listStored();
     // 取り込んだ画像はレシピ画面の候補にもなるので、画面全体を作り直す。
     await refresh();
