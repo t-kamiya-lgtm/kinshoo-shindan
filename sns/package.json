@@ -6,6 +6,6 @@
   "scripts": {
     "build": "node ../scripts/build-single.mjs",
     "selftest": "node selftest.js",
-    "build:appsscript": "node ../scripts/build-single.mjs --format classic --out ../appsscript/Index.html"
+    "build:appsscript": "node ../scripts/build-single.mjs --format b64 --out ../appsscript/Index.html"
   }
 }

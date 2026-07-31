@@ -32,7 +32,7 @@ const OUT = outArg > -1 ? process.argv[outArg + 1] : path.join(SRC_DIR, 'dist', 
 // モジュール読み込みが通る保証がない。そちら向けには classic を使う。
 const fmtArg = process.argv.indexOf('--format');
 const FORMAT = fmtArg > -1 ? process.argv[fmtArg + 1] : 'blob';
-if (!['blob', 'classic'].includes(FORMAT)) throw new Error(`未知の --format: ${FORMAT}`);
+if (!['blob', 'classic', 'b64'].includes(FORMAT)) throw new Error(`未知の --format: ${FORMAT}`);
 
 /** './x.js' を、その import を書いた側のパスから見て解決する */
 function resolveSpec(fromPath, spec) {
@@ -171,16 +171,15 @@ const HEADER = `/* このファイルは scripts/build-single.mjs が生成し�
 // 変換後の本体。書き出し前の検証で、これが欠けずに入っているかを確かめる。
 const classicBodies = new Map();
 
-/** classic：全モジュールを1つの <script> に畳む */
-function buildClassicLoader() {
+/** classic 形式の中身（<script> タグの内側だけ）を組み立てる */
+function buildClassicBody() {
   const factories = order.map((p) => {
     const { body, ret } = toClassicFactory(p, sources.get(p));
     classicBodies.set(p, body);
     return `__def(${JSON.stringify(p)}, function (__req) {\n${body}\n  return {\n${ret}\n  };\n});`;
   });
 
-  return `<script>
-${HEADER}
+  return `${HEADER}
 (function () {
   'use strict';
   var __factories = {}, __cache = {};
@@ -206,6 +205,50 @@ ${factories.join('\n')}
         String(err && err.stack ? err.stack : err).replace(/[&<]/g, function (c) { return c === '&' ? '&amp;' : '&lt;'; }) +
         '</pre></div>'
     );
+  }
+})();`;
+}
+
+function buildClassicLoader() {
+  return `<script>\n${buildClassicBody()}\n</script>`;
+}
+
+/* ---------------- b64 形式 ----------------
+   コード全体を base64 にして埋め込む。埋め込まれるのは英数字と + / = だけの
+   1つの文字列なので、配信側がページを組み立てるときに解釈につまずく余地がない。
+   Apps Script は document.write でページを書き込む際、生の JavaScript を
+   解釈しようとして失敗することがあり（URL を含む行コメントで実際に起きた）、
+   その一群の問題をまとめて避けるための形式。 */
+function buildB64Loader() {
+  const body = buildClassicBody();
+  const b64 = Buffer.from(body, 'utf8').toString('base64');
+  /* 復元して実行するだけの短い読み込み器。
+     ここには < や / を含む文字列を書かない（同じ問題を再発させないため）。 */
+  return `<script>
+(function () {
+  var CODE = "${b64}";
+  function fail(err) {
+    var box = document.createElement('div');
+    box.className = 'notice danger';
+    box.style.margin = '16px';
+    var head = document.createElement('b');
+    head.textContent = '読み込みに失敗しました。';
+    var pre = document.createElement('pre');
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.textContent = String(err && err.stack ? err.stack : err);
+    box.appendChild(head);
+    box.appendChild(pre);
+    document.body.insertBefore(box, document.body.firstChild);
+  }
+  try {
+    var bin = atob(CODE);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var src = new TextDecoder('utf-8').decode(bytes);
+    (0, eval)(src);
+  } catch (err) {
+    if (window.console) console.error(err);
+    fail(err);
   }
 })();
 </script>`;
@@ -254,7 +297,9 @@ out = out.replace(cssTag, () => `<style>\n${css}\n</style>`);
 
 const scriptTag = /<script type="module" src="\.\/app\.js"><\/script>/;
 if (!scriptTag.test(out)) throw new Error('index.html に app.js の script が見つかりません');
-const loader = FORMAT === 'classic' ? buildClassicLoader() : blobLoader;
+const loader = FORMAT === 'classic' ? buildClassicLoader()
+  : FORMAT === 'b64' ? buildB64Loader()
+  : blobLoader;
 out = out.replace(scriptTag, () => loader);
 
 // 外部ファイルへの参照が残っていないか確かめる（残っていたら1ファイルで完結しない）
@@ -283,6 +328,16 @@ if (FORMAT === 'blob') {
 
 // classic は import/export 行を書き換えるので1バイト一致では検証できない。
 // 代わりに、全モジュールの本体が出力に含まれているかを行単位で確かめる。
+if (FORMAT === 'b64') {
+  /* 埋め込んだ base64 を復元し、元の本体と1文字も違わないか確かめる */
+  const m = out.match(/var CODE = "([A-Za-z0-9+/=]+)";/);
+  if (!m) throw new Error('検証できません: 出力から埋め込みコードを取り出せませんでした');
+  const back = Buffer.from(m[1], 'base64').toString('utf8');
+  if (back !== buildClassicBody()) throw new Error('検証に失敗: 埋め込んだコードが元と一致しません');
+  const stray = m[1].match(/[^A-Za-z0-9+/=]/);
+  if (stray) throw new Error(`検証に失敗: base64 に想定外の文字が含まれています: ${stray[0]}`);
+}
+
 if (FORMAT === 'classic') {
   for (const p of order) {
     const lines = (classicBodies.get(p) || '').split('\n').filter((l) => l.trim().length > 20);
