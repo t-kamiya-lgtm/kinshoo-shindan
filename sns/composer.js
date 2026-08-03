@@ -240,7 +240,10 @@ function drawChips(ctx, chips, x, y, W, maxW, accent) {
 /* ------------------------- テンプレート ------------------------- */
 
 function renderStat(ctx, ov, geo, accent) {
-  const { W, H, pad, logo } = geo;
+  const { W, H, pad, logo, safeTop = 0, safeBottom = 0 } = geo;
+  // 文字を置いてよい範囲。一覧で切り取られる上下を除いた内側。
+  const areaTop = safeTop + pad;
+  const areaBottom = H - safeBottom - pad;
   const top = ov.position === 'top';
 
   // 先に高さを積算する。上寄せのときは、その高さぶん下げた位置を「底」として扱う。
@@ -259,14 +262,14 @@ function renderStat(ctx, ov, geo, accent) {
   if (top) {
     scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
     scrimBottom(ctx, W, H, 0.86, 0.5);
-    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
+    drawLogo(ctx, pad, areaBottom - logoH, W, accent, logo);
   } else {
     scrimBottom(ctx, W, H, 0.34);
     scrimTop(ctx, W, H, 0.22, 0.55);
-    drawLogo(ctx, pad, pad, W, accent, logo);
+    drawLogo(ctx, pad, areaTop, W, accent, logo);
   }
 
-  let bottom = top ? pad + blockH : H - pad;
+  let bottom = top ? areaTop + blockH : areaBottom;
 
   if (chipsH) {
     drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
@@ -318,7 +321,10 @@ function renderStat(ctx, ov, geo, accent) {
 }
 
 function renderHook(ctx, ov, geo, accent) {
-  const { W, H, pad, logo } = geo;
+  const { W, H, pad, logo, safeTop = 0, safeBottom = 0 } = geo;
+  // 文字を置いてよい範囲。一覧で切り取られる上下を除いた内側。
+  const areaTop = safeTop + pad;
+  const areaBottom = H - safeBottom - pad;
   const top = ov.position === 'top';
 
   const chipsH = measureChips(ctx, ov.chips, W, W - pad * 2);
@@ -338,14 +344,14 @@ function renderHook(ctx, ov, geo, accent) {
   if (top) {
     scrimTop(ctx, W, H, (blockH + pad * 2) / H + 0.06, 0.9);
     scrimBottom(ctx, W, H, 0.86, 0.5);
-    drawLogo(ctx, pad, H - pad - logoH, W, accent, logo);
+    drawLogo(ctx, pad, areaBottom - logoH, W, accent, logo);
   } else {
     scrimBottom(ctx, W, H, 0.3);
     scrimTop(ctx, W, H, 0.22, 0.55);
-    drawLogo(ctx, pad, pad, W, accent, logo);
+    drawLogo(ctx, pad, areaTop, W, accent, logo);
   }
 
-  let bottom = top ? pad + blockH : H - pad;
+  let bottom = top ? areaTop + blockH : areaBottom;
 
   if (chipsH) {
     drawChips(ctx, ov.chips, pad, bottom - chipsH, W, W - pad * 2, accent);
@@ -388,13 +394,16 @@ function renderHook(ctx, ov, geo, accent) {
 }
 
 function renderBand(ctx, ov, geo, accent) {
-  const { W, H, pad, logo } = geo;
+  const { W, H, pad, logo, safeTop = 0, safeBottom = 0 } = geo;
+  // 文字を置いてよい範囲。一覧で切り取られる上下を除いた内側。
+  const areaTop = safeTop + pad;
+  const areaBottom = H - safeBottom - pad;
   // 上下帯は position でロゴ帯とコピー帯を入れ替える
   const flip = ov.position === 'top';
 
   // ロゴ帯：ロゴと前置き
   const topH = W * 0.14;
-  const logoBarY = flip ? H - topH : 0;
+  const logoBarY = flip ? H - safeBottom - topH : safeTop;
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
   ctx.fillRect(0, logoBarY, W, topH);
   drawLogo(ctx, pad, logoBarY + (topH - logoHeight(W)) / 2, W, accent, logo);
@@ -424,7 +433,7 @@ function renderBand(ctx, ov, geo, accent) {
     headLines.length * headLh +
     (subLines.length ? subLines.length * subLh + W * 0.012 : 0) +
     (chipsH ? chipsH + W * 0.03 : 0);
-  const bandY = flip ? 0 : H - bandH;
+  const bandY = flip ? safeTop : H - safeBottom - bandH;
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
   ctx.fillRect(0, bandY, W, bandH);
 
@@ -500,7 +509,17 @@ export async function render(canvas, img, opts = {}) {
 
   if (!overlay) return canvas;
 
-  const geo = { W, H, pad: Math.round(W * 0.062), logo };
+  // セーフエリア。Instagram のプロフィール一覧は投稿を正方形に切り取るので、
+  // 4:5 で書き出すと上下が (H - W) / 2 ずつ落ちる。文字がそこに掛かると
+  // 一覧で欠けて読めなくなるため、中央の正方形の内側にだけ文字を置く。
+  // 左右にも余白を足す（端に寄せると機種によって欠けるため）。
+  const inset = Math.max(0, Math.round((H - W) / 2));
+  const geo = {
+    W, H, logo,
+    pad: Math.round(W * 0.075),
+    safeTop: inset,
+    safeBottom: inset
+  };
   ctx.save();
   const template = overlay.template || 'hook';
   if (template === 'stat') renderStat(ctx, overlay, geo, accent);
