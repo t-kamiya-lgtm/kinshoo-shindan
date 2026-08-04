@@ -404,8 +404,11 @@ function renderBand(ctx, ov, geo, accent) {
   // ロゴ帯：ロゴと前置き
   const topH = W * 0.14;
   const logoBarY = flip ? H - safeBottom - topH : safeTop;
+  // 帯の下地は画面の端まで伸ばす。セーフエリアで止めると、一覧で切られない
+  // 位置に帯の切れ目が見えて、背景が欠けたように見えてしまう。
+  // 中に置く文字だけをセーフエリアの内側に収める。
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
-  ctx.fillRect(0, logoBarY, W, topH);
+  ctx.fillRect(0, flip ? logoBarY : 0, W, flip ? H - logoBarY : logoBarY + topH);
   drawLogo(ctx, pad, logoBarY + (topH - logoHeight(W)) / 2, W, accent, logo);
   if (ov.eyebrow) {
     const s = W * 0.03;
@@ -434,8 +437,9 @@ function renderBand(ctx, ov, geo, accent) {
     (subLines.length ? subLines.length * subLh + W * 0.012 : 0) +
     (chipsH ? chipsH + W * 0.03 : 0);
   const bandY = flip ? safeTop : H - safeBottom - bandH;
+  // こちらも下地は端まで。文字の開始位置（bandY）は変えない。
   ctx.fillStyle = 'rgba(8,8,8,0.9)';
-  ctx.fillRect(0, bandY, W, bandH);
+  ctx.fillRect(0, flip ? 0 : bandY, W, flip ? bandY + bandH : H - bandY);
 
   let y = bandY + inner;
   ctx.textBaseline = 'top';
