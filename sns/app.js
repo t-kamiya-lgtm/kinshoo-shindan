@@ -691,10 +691,10 @@ const IG_CAPTION_MAX = 2200;
  */
 function recipePhotoOptions(recipe) {
   if (!recipeData || !recipeData.matchRecipePhotos) return [];
-  const found = recipeData.matchRecipePhotos(recipe, stored);
-  // できあがり写真を先に。材料写真はタイトル面には向かない。
   const tags = lib.loadTags();
-  const score = (item) => ((tags[item.key] || []).includes('cooked') ? -1 : 0);
+  const found = recipeData.matchRecipePhotos(recipe, stored, tags);
+  // ①のタイトル面に使うのは「できあがり」。材料写真より先に出す。
+  const score = (item) => (recipeData.recipePhotoRole(item.key) === 'できあがり' ? -1 : 0);
   return found.sort((a, b) => score(a) - score(b) || a.key.localeCompare(b.key));
 }
 
@@ -704,11 +704,87 @@ function otherRecipePhotos(currentKey, limit = 3) {
   const out = [];
   for (const r of recipeData.RECIPES) {
     if (r.key === currentKey) continue;
-    const hit = recipeData.matchRecipePhotos(r, stored)[0];
+    const hit = recipeData.matchRecipePhotos(r, stored, lib.loadTags())
+      .find((x) => recipeData.recipePhotoRole(x.key) === 'できあがり')
+      || recipeData.matchRecipePhotos(r, stored, lib.loadTags())[0];
     if (hit) out.push(hit);
     if (out.length >= limit) break;
   }
   return out;
+}
+
+/**
+ * レシピ画面からの写真追加。
+ * 写真とレシピは「ファイル名の先頭の番号」で結び付けている。手元のファイル名は
+ * 撮影時のまま（_DSC0001.JPG など）のことが多いので、取り込むときに
+ * そのレシピの番号へ付け替える。同時に商品タグも付けて、番号が重なる
+ * レシピ（04 はモンスターとソバの両方にある）でも取り違えないようにする。
+ */
+function setupRecipeUpload(recipe, options) {
+  const input = $('#recipe-upload');
+  const note = $('#recipe-photo-note');
+  const skuLabel = recipe.sku === 'monster' ? 'モンスター' : 'ソバ';
+  const no = String(recipe.no).padStart(2, '0');
+
+  if (note) {
+    note.textContent = options.length
+      ? `このレシピの写真 ${options.length}点：${options.map((o) => o.key).join('、')}`
+      : `このレシピの写真はまだありません。「このレシピの写真を追加」から選ぶと、${no}-1 のように`
+        + `番号を付け替えて取り込み、商品タグ（${skuLabel}）も自動で付けます。`;
+  }
+  if (!input) return;
+
+  input.onchange = async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    if (!files.length) return;
+
+    // 既にある番号の続きから振る。既存の写真を上書きしない。
+    const used = new Set();
+    for (const s of stored) {
+      const m = String(s.key).match(/^\s*0*(\d{1,2})-(\d+)\./);
+      if (m && Number(m[1]) === recipe.no) used.add(Number(m[2]));
+    }
+    let next = 1;
+    const renamed = [];
+    for (const f of files) {
+      while (used.has(next)) next++;
+      used.add(next);
+      const ext = (f.name.match(/\.[a-z0-9]+$/i) || ['.jpg'])[0].toLowerCase();
+      renamed.push(new File([f], `${no}-${next}${ext}`, { type: f.type || 'image/jpeg' }));
+    }
+
+    const progress = showProgress('取り込み中…');
+    let r;
+    try {
+      r = await lib.importFiles(renamed, {
+        onProgress: (done, total, name) => progress.update(`取り込み中… ${done} / ${total}　${name}`)
+      });
+    } catch (err) {
+      progress.done();
+      console.error('レシピ写真の取り込みに失敗しました:', err);
+      toast(`取り込みに失敗しました：${err && err.message ? err.message : err}`);
+      return;
+    }
+    progress.done();
+
+    // 商品タグを付ける。これがないと、番号が重なるレシピで紐づけ先が決まらない。
+    const tags = lib.loadTags();
+    for (const f of renamed) {
+      const cur = new Set(tags[f.name] || []);
+      cur.delete('monster');
+      cur.delete('sova');
+      cur.add(recipe.sku);
+      // シーンのタグ（できあがり／材料）は写真を見ないと決められないので付けない。
+      // 画像ライブラリで付けてください。
+      tags[f.name] = [...cur];
+    }
+    lib.saveTags(tags);
+
+    stored = await lib.listStored();
+    await refresh();
+    toast(`${r.added}点を ${skuLabel} ${no} の写真として取り込みました（${renamed.map((f) => f.name).join('、')}）`);
+  };
 }
 
 async function renderRecipeView() {
@@ -755,9 +831,12 @@ async function renderRecipeView() {
   const chosenKey = recipeState.heroKey || recipe.photos.hero || (options[0] ? options[0].key : '');
   heroSel.replaceChildren(
     el('option', { value: '' }, options.length ? '（自動：先頭の候補）' : '（画像が未取込です）'),
-    ...options.map((o) => el('option', {
-      value: o.key, selected: o.key === chosenKey ? 'selected' : null
-    }, o.key))
+    ...options.map((o) => {
+      const role = recipeData.recipePhotoRole(o.key);
+      return el('option', {
+        value: o.key, selected: o.key === chosenKey ? 'selected' : null
+      }, role ? `${o.key}（${role}）` : o.key);
+    })
   );
 
   // このレシピの写真が見つからないことは、はっきり伝える。
@@ -878,6 +957,7 @@ async function renderRecipeView() {
     save(LS.recipe, recipeState);
     renderRecipeView();
   };
+  setupRecipeUpload(recipe, options);
   $('#recipe-copy').onclick = () => copyText(ta.value);
   $('#recipe-reset').onclick = () => {
     delete recipeState.captions[recipe.key];
@@ -943,6 +1023,23 @@ async function renderLibrary() {
     }
 
     const body = el('div', { class: 'lib-body' }, el('div', { class: 'lib-name' }, r.file));
+
+    // どのレシピの写真かを名前の下に出す。番号だけでは何の料理か分からないため。
+    if (recipeData && recipeData.recipeOfImage) {
+      const rec = recipeData.recipeOfImage(r.file, r.tags);
+      if (rec) {
+        const role = recipeData.recipePhotoRole(r.file);
+        body.append(el('div', { class: 'lib-recipe' },
+          el('span', { class: 'chip accent' },
+            `${rec.sku === 'monster' ? 'モンスター' : 'ソバ'} ${String(rec.no).padStart(2, '0')}`),
+          ` ${rec.title.replace(/\n/g, '')}`,
+          role ? el('span', { class: 'lib-role' }, role) : null));
+      } else if (recipeData.leadingNumber(r.file) !== null) {
+        // 番号は付いているのに紐づかない＝商品タグが未設定の可能性が高い
+        body.append(el('div', { class: 'lib-recipe warn' },
+          'レシピ番号は読めましたが、商品タグ（モンスター／ソバ）が未設定のため紐づいていません'));
+      }
+    }
 
     for (const [group, label] of [['sku', '商品'], ['scene', 'シーン'], ['space', '文字を載せる余白']]) {
       const tagList = el('div', { class: 'tag-list' });
@@ -1116,22 +1213,56 @@ function renderSpec() {
 
 /* ============================ 投稿ログ ============================ */
 
-function renderLog() {
+async function renderLog() {
   const c = $('#log-content');
   c.replaceChildren();
   if (!postLog.entries.length) {
     c.append(el('div', { class: 'card' }, el('p', { class: 'hint' }, 'まだ投稿記録はありません。')));
     return;
   }
+
+  // 同じ写真が何度も出てくるので、1枚につき1回だけ読み込んで URL を使い回す。
+  // 共有モードでは1枚ごとに Drive へ取りに行くため、ここを分けないと重い。
+  const urls = new Map();
+  const urlFor = async (key) => {
+    if (!key) return null;
+    if (urls.has(key)) return urls.get(key);
+    const item = stored.find((s) => s.key === key);
+    let url = null;
+    try {
+      const blob = item ? await lib.blobOf(item) : null;
+      if (blob) url = URL.createObjectURL(blob);
+    } catch (err) {
+      console.error('投稿ログの画像を読み込めませんでした:', key, err);
+    }
+    urls.set(key, url);
+    return url;
+  };
+
   for (const e of postLog.entries) {
-    c.append(el('div', { class: 'card' },
-      el('div', { class: 'chips' },
-        el('span', { class: 'chip accent' }, e.platform === 'ig' ? 'Instagram' : 'X'),
-        el('span', { class: 'chip' }, e.dateKey),
-        el('span', { class: 'chip' }, e.axis),
-        el('span', { class: 'chip' }, e.sku),
-        e.image ? el('span', { class: 'chip' }, e.image) : null),
-      el('pre', { class: 'hint', style: 'white-space:pre-wrap;margin-top:10px' }, e.text)
+    const url = await urlFor(e.image);
+    const thumb = el('div', { class: 'log-thumb' });
+    if (url) {
+      const img = el('img', { src: url, alt: e.image, loading: 'lazy' });
+      img.title = e.image + '（クリックで拡大）';
+      img.onclick = () => window.open(url, '_blank', 'noopener');
+      thumb.append(img);
+    } else {
+      // 画像を消したあとでもログは残る。無言で空欄にせず、理由がわかるようにする。
+      thumb.append(el('div', { class: 'log-thumb-none' },
+        e.image ? 'ライブラリにありません' : '画像なし'));
+    }
+
+    c.append(el('div', { class: 'card log-entry' },
+      thumb,
+      el('div', { class: 'log-body' },
+        el('div', { class: 'chips' },
+          el('span', { class: 'chip accent' }, e.platform === 'ig' ? 'Instagram' : 'X'),
+          el('span', { class: 'chip' }, e.dateKey),
+          el('span', { class: 'chip' }, e.axis),
+          el('span', { class: 'chip' }, e.sku),
+          e.image ? el('span', { class: 'chip' }, e.image) : null),
+        el('pre', { class: 'hint', style: 'white-space:pre-wrap;margin-top:10px' }, e.text))
     ));
   }
 }

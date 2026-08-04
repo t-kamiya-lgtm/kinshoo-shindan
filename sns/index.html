@@ -88,7 +88,12 @@
           <span>できあがり写真</span>
           <select id="recipe-hero"></select>
         </label>
+        <label class="btn ghost">
+          このレシピの写真を追加
+          <input type="file" id="recipe-upload" accept="image/*" multiple hidden>
+        </label>
       </div>
+      <p class="hint" id="recipe-photo-note" style="margin-top:6px"></p>
       <p class="hint">
         4枚組のカルーセルとして書き出します。全枚 1080×1350（4:5）で揃えているので、
         Instagram でトリミングされません。①の背景だけ写真を使い、②③④は文字で組みます。

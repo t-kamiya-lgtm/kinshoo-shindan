@@ -247,6 +247,28 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 .share-bar .save-state { font-size: 11px; color: var(--muted); min-width: 4.5em; }
 .share-bar .save-state.bad { color: #ff6b6b; }
 
+/* 画像ライブラリ：その写真がどのレシピのものか */
+.lib-recipe { font-size: 11px; color: var(--text); margin: 6px 0 2px; line-height: 1.6; }
+.lib-recipe.warn { color: var(--warn); }
+.lib-recipe .lib-role {
+  margin-left: 6px; padding: 1px 7px; border-radius: 20px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); font-size: 10px;
+}
+
+/* 投稿ログ：どの写真で出したかを一覧で分かるようにする */
+.log-entry { display: grid; grid-template-columns: 132px 1fr; gap: 14px; align-items: start; }
+.log-thumb {
+  aspect-ratio: 4 / 5; background: #000; border-radius: 10px; overflow: hidden;
+  display: grid; place-items: center; border: 1px solid var(--line);
+}
+.log-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+.log-thumb-none { color: var(--muted); font-size: 10px; text-align: center; padding: 0 6px; line-height: 1.5; }
+.log-body { min-width: 0; }
+@media (max-width: 560px) {
+  .log-entry { grid-template-columns: 1fr; }
+  .log-thumb { max-width: 160px; }
+}
+
 /* 商品（SKU）の切り替え */
 .sku-picker {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;

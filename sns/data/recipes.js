@@ -888,15 +888,63 @@ function normalizeForMatch(name) {
  * @param {object} recipe
  * @param {Array<{key: string}>} stored 画像ライブラリの一覧
  */
-export function matchRecipePhotos(recipe, stored) {
-  if (!recipe || !recipe.photo || !stored) return [];
-  const prefix = normalizeForMatch(recipe.photo.prefix);
-  const keywords = (recipe.photo.keywords || []).map(normalizeForMatch);
+/**
+ * ファイル名の先頭にある番号を取り出す。
+ * レシピ写真は「04-1.JPG」「10-2.JPG」のように、原稿の番号＋枝番で並んでいる。
+ * @returns {number|null}
+ */
+export function leadingNumber(name) {
+  const base = String(name).replace(/^.*[\\/]/, '');
+  const m = base.match(/^\s*0*(\d{1,2})\s*[-_.\s]/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * その画像がどのレシピのものかを返す。見つからなければ null。
+ *
+ * 判定は「ファイル名の先頭の番号」と「画像に付けた商品タグ」の2つ。
+ * 番号だけでは足りない。モンスターの 04 とソバの 04 が同じ番号のため、
+ * どちらの商品かはタグで見分ける。タグが無い場合は番号だけで拾う。
+ *
+ * @param {string} key 画像のファイル名
+ * @param {string[]} tags その画像に付いているタグ
+ */
+export function recipeOfImage(key, tags = []) {
+  const no = leadingNumber(key);
+  if (no === null) return null;
+  const candidates = RECIPES.filter((r) => r.no === no);
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+  // 番号が重なるときは商品タグで決める
+  return candidates.find((r) => tags.includes(r.sku)) || null;
+}
+
+/**
+ * そのレシピの写真だけを返す。
+ * @param {object} recipe
+ * @param {Array<{key: string}>} stored 画像ライブラリの一覧
+ * @param {object} tagsByKey ファイル名 → タグ配列
+ */
+export function matchRecipePhotos(recipe, stored, tagsByKey = {}) {
+  if (!recipe || !stored) return [];
+  const prefix = recipe.photo ? normalizeForMatch(recipe.photo.prefix) : '';
+  const keywords = ((recipe.photo && recipe.photo.keywords) || []).map(normalizeForMatch);
 
   return stored.filter((item) => {
+    // 番号での照合（実際のレシピ写真はこの形）
+    const hit = recipeOfImage(item.key, tagsByKey[item.key] || []);
+    if (hit && hit.key === recipe.key) return true;
+    // 原稿ファイル名や料理名を含むファイルにも対応しておく
     const name = normalizeForMatch(item.key);
     if (prefix && name.includes(prefix)) return true;
-    // 手がかりの語で拾う。番号が一致していれば、より確からしい。
     return keywords.some((k) => k && name.includes(k));
   });
+}
+
+/** レシピ写真の並び順。材料（-1）→ できあがり（-2）の順に見せる。 */
+export function recipePhotoRole(key) {
+  const base = String(key).replace(/^.*[\\/]/, '');
+  const m = base.match(/^\s*0*\d{1,2}\s*[-_.]\s*(\d)/);
+  if (!m) return '';
+  return m[1] === '1' ? '材料' : m[1] === '2' ? 'できあがり' : '';
 }
