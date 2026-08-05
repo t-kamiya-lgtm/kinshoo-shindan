@@ -287,6 +287,21 @@ async function renderProposals() {
   list.replaceChildren();
   $('#no-images-notice').hidden = stored.length > 0;
 
+  // 支給ロゴが読めていないと、合成画像には文字で組んだ代用が描かれる。
+  // 見た目が似ているので気づきにくい。画面ではっきり伝える。
+  // 共有版とローカル版でロゴの置き場所が違う（Drive / この端末）ため、
+  // 片方で登録しても、もう片方には引き継がれない。
+  const logoNotice = $('#no-logo-notice');
+  if (logoNotice) {
+    logoNotice.hidden = !!logos.onPhoto;
+    logoNotice.textContent =
+      'ブランドロゴが未登録です。いまは文字で組んだ代用を描いています。'
+      + '［設定］タブの「ブランドロゴ」で、白抜きロゴ（背景透過 PNG）を登録してください。'
+      + (backend.isShared
+        ? 'ロゴは共有データ（Drive）に保存され、メンバー全員に反映されます。'
+        : 'ローカル版のロゴはこの端末にだけ保存されます。共有版で使うには、共有版でも登録してください。');
+  }
+
   const sync = settings.syncPlatforms;
   const plan = generateDailyPlan(dateKey, variants, { sync, forceSku: forcedSkus() });
   // 直近に投稿した写真は避ける。候補が尽きた場合は pickImage が全体から
@@ -353,7 +368,10 @@ function buildPostCard(post, imageItem, siblingKeys = []) {
         sameAsSibling ? el('span', { class: 'chip dup' }, 'もう1本と同じ写真') : null,
         // 本文を手で直していると、生成側の文面を更新しても画面は変わらない。
         // 気づけないと「反映されていない」と見えるので、必ず表示する。
-        edited ? el('span', { class: 'chip dup' }, '本文を編集済み') : null
+        edited ? el('span', { class: 'chip dup' }, '本文を編集済み') : null,
+        // 合成画像にロゴを載せるのに、支給ファイルが読めていない状態。
+        isComposite && !logos.onPhoto
+          ? el('span', { class: 'chip dup' }, 'ロゴ未登録（代用を描画中）') : null
       )
     )
   );
