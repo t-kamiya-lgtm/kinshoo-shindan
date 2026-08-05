@@ -710,7 +710,7 @@ const IG_CAPTION_MAX = 2200;
 function recipePhotoOptions(recipe) {
   if (!recipeData || !recipeData.matchRecipePhotos) return [];
   const tags = lib.loadTags();
-  const found = recipeData.matchRecipePhotos(recipe, stored, tags);
+  const found = recipeData.matchRecipePhotos(recipe, stored, tags, lib.loadPhotoRecipes());
   // ①のタイトル面に使うのは「できあがり」。材料写真より先に出す。
   const score = (item) => (recipeData.recipePhotoRole(item.key) === 'できあがり' ? -1 : 0);
   return found.sort((a, b) => score(a) - score(b) || a.key.localeCompare(b.key));
@@ -720,11 +720,12 @@ function recipePhotoOptions(recipe) {
 function otherRecipePhotos(currentKey, limit = 3) {
   if (!recipeData || !recipeData.matchRecipePhotos) return [];
   const out = [];
+  const tags = lib.loadTags();
+  const links = lib.loadPhotoRecipes();
   for (const r of recipeData.RECIPES) {
     if (r.key === currentKey) continue;
-    const hit = recipeData.matchRecipePhotos(r, stored, lib.loadTags())
-      .find((x) => recipeData.recipePhotoRole(x.key) === 'できあがり')
-      || recipeData.matchRecipePhotos(r, stored, lib.loadTags())[0];
+    const found = recipeData.matchRecipePhotos(r, stored, tags, links);
+    const hit = found.find((x) => recipeData.recipePhotoRole(x.key) === 'できあがり') || found[0];
     if (hit) out.push(hit);
     if (out.length >= limit) break;
   }
@@ -1053,8 +1054,16 @@ async function renderLibrary() {
       recipeLine.replaceChildren();
       if (!recipeData || !recipeData.recipeOfImage) return;
       const tagsNow = lib.getTags(r.file);
-      const rec = recipeData.recipeOfImage(r.file, tagsNow);
+      const linked = lib.loadPhotoRecipes()[r.file] || '';
       const parsed = recipeData.parsePhotoName(r.file);
+      // 画面で指定されていれば、それがそのままこの写真のレシピ。
+      if (linked === 'none') {
+        recipeLine.append(el('div', { class: 'lib-recipe' },
+          el('span', { class: 'chip' }, 'レシピ写真ではない'),
+          ' 指定により、レシピ投稿には使いません'));
+        return;
+      }
+      const rec = linked ? recipeData.getRecipe(linked) : recipeData.recipeOfImage(r.file, tagsNow);
       if (rec) {
         const role = recipeData.recipePhotoRole(r.file);
         recipeLine.append(el('div', { class: 'lib-recipe' },
@@ -1064,7 +1073,7 @@ async function renderLibrary() {
           role ? el('span', { class: 'lib-role' }, role) : null));
         // 番号が2商品にまたがっていて、ファイル名に商品が書いていない場合は、
         // タグ次第で紐づけ先が変わる。取り違えの元なので、その旨を出す。
-        if (parsed && !parsed.sku && recipeData.isSharedNumber(parsed.no)) {
+        if (!linked && parsed && !parsed.sku && recipeData.isSharedNumber(parsed.no)) {
           const nn = String(parsed.no).padStart(2, '0');
           recipeLine.append(el('div', { class: 'lib-recipe warn' },
             `${nn} はモンスターとソバの両方にある番号です。いまは商品タグで判定しています。`
@@ -1103,6 +1112,32 @@ async function renderLibrary() {
       }
       body.append(el('div', { class: 'tag-group' },
         el('div', { class: 'tag-group-label' }, label), tagList));
+    }
+
+    // レシピとの紐づけ。ふだんはファイル名で自動判定するが、
+    // 名前を変えられない写真もあるので、ここで直接指定できるようにする。
+    if (recipeData && recipeData.RECIPES) {
+      const cur = lib.loadPhotoRecipes()[r.file] || '';
+      const sel = el('select', {
+        class: 'lib-recipe-pick',
+        onchange: (ev) => {
+          lib.setPhotoRecipe(r.file, ev.target.value);
+          drawRecipeLine();
+          renderProposals();
+          toast(ev.target.value
+            ? (ev.target.value === 'none' ? 'レシピ写真から外しました' : 'レシピを指定しました')
+            : 'ファイル名での自動判定に戻しました');
+        }
+      },
+        el('option', { value: '', selected: cur === '' ? 'selected' : null }, '自動（ファイル名で判定）'),
+        el('option', { value: 'none', selected: cur === 'none' ? 'selected' : null }, 'レシピ写真ではない'),
+        ...recipeData.RECIPES.map((rec) => el('option', {
+          value: rec.key, selected: rec.key === cur ? 'selected' : null
+        }, `${rec.sku === 'monster' ? 'モンスター' : 'ソバ'} ${String(rec.no).padStart(2, '0')}｜`
+          + `${rec.title.replace(/\n/g, '')}`))
+      );
+      body.append(el('div', { class: 'tag-group' },
+        el('div', { class: 'tag-group-label' }, 'レシピとの紐づけ'), sel));
     }
 
     if (r.viewUrl) {
@@ -1552,6 +1587,26 @@ function setupSharedBar() {
       el('span', { class: 'chip accent' }, '共有版'),
       el('span', { class: 'who' }, user && user.email ? user.email : 'ログイン中'),
       status,
+      el('button', {
+        class: 'btn ghost', title: '書きかけの変更をいますぐ共有データへ書き込みます',
+        onclick: async (ev) => {
+          const btn = ev.currentTarget;
+          btn.disabled = true;
+          try {
+            const r = await backend.flushNow();
+            if (!r.ok) {
+              const m = r.error && r.error.message ? r.error.message : '通信に失敗しました';
+              toast(`保存に失敗しました：${m}（もう一度お試しください）`);
+            } else if (r.count === 0) {
+              toast('保存済みです（未保存の変更はありません）');
+            } else {
+              toast('保存しました。ほかのメンバーの画面にも反映されます');
+            }
+          } finally {
+            btn.disabled = false;
+          }
+        }
+      }, '更新を保存'),
       el('button', {
         class: 'btn ghost', title: '他のメンバーの更新を取り込みます',
         onclick: async () => {

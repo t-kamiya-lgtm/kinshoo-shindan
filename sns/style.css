@@ -385,3 +385,9 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   display: flex; flex-wrap: wrap; gap: 8px;
   justify-content: flex-end; margin-top: 16px;
 }
+
+/* 画像ライブラリ：写真とレシピの手動の紐づけ */
+.lib-recipe-pick {
+  width: 100%; font-size: 11px; padding: 5px 8px; border-radius: 8px;
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+}

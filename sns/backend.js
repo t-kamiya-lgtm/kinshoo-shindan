@@ -95,20 +95,28 @@ export function putDoc(name, value) {
   flushTimer = setTimeout(flush, 800);
 }
 
+/**
+ * 書きかけをまとめて送る。
+ * 自動保存の途中で例外を投げると拾い手がいないので、ここでは投げずに
+ * 結果を返す。画面の「更新を保存」は、この結果を見て成否を出す。
+ * @returns {Promise<{ok: boolean, count: number, error?: Error}>}
+ */
 async function flush() {
-  if (!pending.size) return;
+  if (!pending.size) return { ok: true, count: 0 };
   const batch = [...pending.entries()].map(([name, value]) => ({ name, json: JSON.stringify(value) }));
   pending.clear();
   inFlight++;
   try {
     await call('apiPutDocs', batch);
     if (--inFlight === 0 && !pending.size) emit('saved');
+    return { ok: true, count: batch.length };
   } catch (err) {
     inFlight--;
     console.error('共有データの保存に失敗しました:', err);
     // 取りこぼさないよう積み直す。次の保存でまとめて送られる。
     for (const { name } of batch) if (!pending.has(name)) pending.set(name, docs.get(name));
     emit('error', err);
+    return { ok: false, count: batch.length, error: err };
   }
 }
 

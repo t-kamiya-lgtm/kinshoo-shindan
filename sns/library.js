@@ -11,6 +11,8 @@ const DB_NAME = 'pm-sns';
 const DB_VERSION = 1;
 const STORE = 'images';
 const TAGS_KEY = 'pm-sns:tags';
+// 写真とレシピの手動の紐づけ。ファイル名 → レシピキー（'none' はレシピ写真ではない）
+const PHOTO_RECIPE_KEY = 'pm-sns:photo-recipe';
 
 let dbPromise = null;
 
@@ -297,6 +299,37 @@ export function saveTags(tags) {
     return;
   }
   localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+}
+
+/* ----------------- 写真とレシピの手動の紐づけ ----------------- */
+//
+// ふだんはファイル名から自動で決まるが、名前を変えられない写真もある。
+// ここで指定したぶんは、ファイル名やタグより優先する。
+
+export function loadPhotoRecipes() {
+  if (backend.isShared) return backend.getDoc(PHOTO_RECIPE_KEY) || {};
+  try {
+    return JSON.parse(localStorage.getItem(PHOTO_RECIPE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export function savePhotoRecipes(map) {
+  if (backend.isShared) {
+    backend.putDoc(PHOTO_RECIPE_KEY, map);
+    return;
+  }
+  localStorage.setItem(PHOTO_RECIPE_KEY, JSON.stringify(map));
+}
+
+/** 1件だけ書き換える。空文字を渡すと「自動」に戻す。 */
+export function setPhotoRecipe(key, recipeKey) {
+  const all = loadPhotoRecipes();
+  if (recipeKey) all[key] = recipeKey;
+  else delete all[key];
+  savePhotoRecipes(all);
+  return all;
 }
 
 export function getTags(key) {

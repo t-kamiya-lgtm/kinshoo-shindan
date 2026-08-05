@@ -957,35 +957,41 @@ export function isSharedNumber(no) {
  * @param {Array<{key: string}>} stored 画像ライブラリの一覧
  * @param {object} tagsByKey ファイル名 → タグ配列
  */
-export function matchRecipePhotos(recipe, stored, tagsByKey = {}) {
+export function matchRecipePhotos(recipe, stored, tagsByKey = {}, linkByKey = {}) {
   if (!recipe || !stored) return [];
   const prefix = recipe.photo ? normalizeForMatch(recipe.photo.prefix) : '';
   const keywords = ((recipe.photo && recipe.photo.keywords) || []).map(normalizeForMatch);
 
+  // 0. 画面で指定された紐づけが最優先。指定のある写真は、自動判定の対象から外す
+  //    （指定した先だけに出す。両方に出ると、どちらが正なのか分からなくなる）。
+  const linked = stored.filter((item) => linkByKey[item.key] === recipe.key);
+  const free = stored.filter((item) => !linkByKey[item.key]);
+  const withLinked = (list) => (linked.length ? [...linked, ...list.filter((x) => !linked.includes(x))] : list);
+
   // 1. ファイル名に商品が書いてあるもの（mon04-1.JPG）。これがあれば、これだけを使う。
   //    番号が重なるレシピで、タグ頼みの取り違えが起きないようにするため。
-  const explicit = stored.filter((item) => {
+  const explicit = free.filter((item) => {
     const p = parsePhotoName(item.key);
     return p && p.sku === recipe.sku && p.no === recipe.no;
   });
-  if (explicit.length) return explicit;
+  if (explicit.length) return withLinked(explicit);
 
   // 2. 番号（＋番号が重なる場合は商品タグ）で決まるもの
-  const byNumber = stored.filter((item) => {
+  const byNumber = free.filter((item) => {
     const hit = recipeOfImage(item.key, tagsByKey[item.key] || []);
     return hit && hit.key === recipe.key;
   });
-  if (byNumber.length) return byNumber;
+  if (byNumber.length) return withLinked(byNumber);
 
   // 3. 原稿ファイル名や料理名を含むもの。
   //    番号の付いた写真は 1・2 で決着済みなので、ここでは拾わない
   //    （番号が別のレシピのものを、名前の一部が似ているだけで混ぜないため）。
-  return stored.filter((item) => {
+  return withLinked(free.filter((item) => {
     if (parsePhotoName(item.key)) return false;
     const name = normalizeForMatch(item.key);
     if (prefix && name.includes(prefix)) return true;
     return keywords.some((k) => k && name.includes(k));
-  });
+  }));
 }
 
 /** レシピ写真の並び順。材料（-1）→ できあがり（-2）の順に見せる。 */
