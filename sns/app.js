@@ -743,12 +743,15 @@ function setupRecipeUpload(recipe, options) {
   const note = $('#recipe-photo-note');
   const skuLabel = recipe.sku === 'monster' ? 'モンスター' : 'ソバ';
   const no = String(recipe.no).padStart(2, '0');
+  // 04 のようにモンスターとソバで番号が重なるものは、ファイル名に商品を書く。
+  const head = recipe.sku === 'monster' ? 'mon' : 'sova';
+  const baseName = `${head}${no}`;
 
   if (note) {
     note.textContent = options.length
       ? `このレシピの写真 ${options.length}点：${options.map((o) => o.key).join('、')}`
-      : `このレシピの写真はまだありません。「このレシピの写真を追加」から選ぶと、${no}-1 のように`
-        + `番号を付け替えて取り込み、商品タグ（${skuLabel}）も自動で付けます。`;
+      : `このレシピの写真はまだありません。「このレシピの写真を追加」から選ぶと、${baseName}-1 のように`
+        + `商品と番号を付け替えて取り込み、商品タグ（${skuLabel}）も自動で付けます。`;
   }
   if (!input) return;
 
@@ -757,11 +760,12 @@ function setupRecipeUpload(recipe, options) {
     e.target.value = '';
     if (!files.length) return;
 
-    // 既にある番号の続きから振る。既存の写真を上書きしない。
+    // 既にある枝番の続きから振る。既存の写真を上書きしない。
+    // 商品なしの「04-1」も、同じ番号として数に入れる。
     const used = new Set();
-    for (const s of stored) {
-      const m = String(s.key).match(/^\s*0*(\d{1,2})-(\d+)\./);
-      if (m && Number(m[1]) === recipe.no) used.add(Number(m[2]));
+    for (const item of stored) {
+      const p = recipeData.parsePhotoName(item.key);
+      if (p && p.no === recipe.no && p.sub && (!p.sku || p.sku === recipe.sku)) used.add(p.sub);
     }
     let next = 1;
     const renamed = [];
@@ -769,7 +773,7 @@ function setupRecipeUpload(recipe, options) {
       while (used.has(next)) next++;
       used.add(next);
       const ext = (f.name.match(/\.[a-z0-9]+$/i) || ['.jpg'])[0].toLowerCase();
-      renamed.push(new File([f], `${no}-${next}${ext}`, { type: f.type || 'image/jpeg' }));
+      renamed.push(new File([f], `${baseName}-${next}${ext}`, { type: f.type || 'image/jpeg' }));
     }
 
     const progress = showProgress('取り込み中…');
@@ -1043,33 +1047,59 @@ async function renderLibrary() {
     const body = el('div', { class: 'lib-body' }, el('div', { class: 'lib-name' }, r.file));
 
     // どのレシピの写真かを名前の下に出す。番号だけでは何の料理か分からないため。
-    if (recipeData && recipeData.recipeOfImage) {
-      const rec = recipeData.recipeOfImage(r.file, r.tags);
+    // 商品タグを押すと紐づけ先が変わることがあるので、その場で書き直す。
+    const recipeLine = el('div', { class: 'lib-recipe-box' });
+    const drawRecipeLine = () => {
+      recipeLine.replaceChildren();
+      if (!recipeData || !recipeData.recipeOfImage) return;
+      const tagsNow = lib.getTags(r.file);
+      const rec = recipeData.recipeOfImage(r.file, tagsNow);
+      const parsed = recipeData.parsePhotoName(r.file);
       if (rec) {
         const role = recipeData.recipePhotoRole(r.file);
-        body.append(el('div', { class: 'lib-recipe' },
+        recipeLine.append(el('div', { class: 'lib-recipe' },
           el('span', { class: 'chip accent' },
             `${rec.sku === 'monster' ? 'モンスター' : 'ソバ'} ${String(rec.no).padStart(2, '0')}`),
           ` ${rec.title.replace(/\n/g, '')}`,
           role ? el('span', { class: 'lib-role' }, role) : null));
-      } else if (recipeData.leadingNumber(r.file) !== null) {
+        // 番号が2商品にまたがっていて、ファイル名に商品が書いていない場合は、
+        // タグ次第で紐づけ先が変わる。取り違えの元なので、その旨を出す。
+        if (parsed && !parsed.sku && recipeData.isSharedNumber(parsed.no)) {
+          const nn = String(parsed.no).padStart(2, '0');
+          recipeLine.append(el('div', { class: 'lib-recipe warn' },
+            `${nn} はモンスターとソバの両方にある番号です。いまは商品タグで判定しています。`
+            + `違う場合は下の商品タグを直すか、ファイル名を mon${nn}-1 のようにしてください。`));
+        }
+      } else if (parsed) {
         // 番号は付いているのに紐づかない＝商品タグが未設定の可能性が高い
-        body.append(el('div', { class: 'lib-recipe warn' },
+        recipeLine.append(el('div', { class: 'lib-recipe warn' },
           'レシピ番号は読めましたが、商品タグ（モンスター／ソバ）が未設定のため紐づいていません'));
       }
-    }
+    };
+    drawRecipeLine();
+    body.append(recipeLine);
 
+    // 商品タグは1つに絞られる（ソバを押すとモンスターが外れる）ので、
+    // 押した札だけでなく、このカードの札すべてを付け直す。
+    const chips = [];
+    const syncChips = () => {
+      const now = lib.getTags(r.file);
+      for (const c of chips) c.node.classList.toggle('on', now.includes(c.id));
+    };
     for (const [group, label] of [['sku', '商品'], ['scene', 'シーン'], ['space', '文字を載せる余白']]) {
       const tagList = el('div', { class: 'tag-list' });
       for (const t of TAG_VOCAB[group]) {
-        tagList.append(el('span', {
+        const node = el('span', {
           class: `tag ${r.tags.includes(t.id) ? 'on' : ''}`,
-          onclick: (ev) => {
+          onclick: () => {
             lib.toggleTag(r.file, t.id);
-            ev.target.classList.toggle('on');
+            syncChips();
+            drawRecipeLine();
             renderProposals();
           }
-        }, t.label));
+        }, t.label);
+        chips.push({ node, id: t.id });
+        tagList.append(node);
       }
       body.append(el('div', { class: 'tag-group' },
         el('div', { class: 'tag-group-label' }, label), tagList));

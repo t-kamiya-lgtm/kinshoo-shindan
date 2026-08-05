@@ -888,15 +888,40 @@ function normalizeForMatch(name) {
  * @param {object} recipe
  * @param {Array<{key: string}>} stored 画像ライブラリの一覧
  */
+// ファイル名の先頭に付けられる商品の目印。
+// 「04」はモンスターとソバの両方にあるため、番号だけでは決められない。
+// mon04-1.JPG のように書いてあれば、それが最も確かな手がかりになる。
+const SKU_PREFIXES = [
+  { re: /^(?:monster|mon|m)$/i, sku: 'monster' },
+  { re: /^(?:sova|soba|s)$/i, sku: 'sova' }
+];
+
+/**
+ * レシピ写真のファイル名を読む。「mon04-1.JPG」「04-2.JPG」「10-2.JPG」の形。
+ * レシピ写真でない名前（20251111prime_d_086.jpg など）は null を返す。
+ * @returns {{sku: string|null, no: number, sub: number|null}|null}
+ */
+export function parsePhotoName(name) {
+  const base = String(name).replace(/^.*[\\/]/, '');
+  const m = base.match(/^\s*([A-Za-z]*)\s*0*(\d{1,2})\s*[-_.\s]\s*(\d)?/);
+  if (!m) return null;
+  let sku = null;
+  if (m[1]) {
+    const found = SKU_PREFIXES.find((s) => s.re.test(m[1]));
+    if (!found) return null; // 知らない接頭辞は、レシピ番号と決めつけない
+    sku = found.sku;
+  }
+  return { sku, no: Number(m[2]), sub: m[3] ? Number(m[3]) : null };
+}
+
 /**
  * ファイル名の先頭にある番号を取り出す。
  * レシピ写真は「04-1.JPG」「10-2.JPG」のように、原稿の番号＋枝番で並んでいる。
  * @returns {number|null}
  */
 export function leadingNumber(name) {
-  const base = String(name).replace(/^.*[\\/]/, '');
-  const m = base.match(/^\s*0*(\d{1,2})\s*[-_.\s]/);
-  return m ? Number(m[1]) : null;
+  const p = parsePhotoName(name);
+  return p ? p.no : null;
 }
 
 /**
@@ -910,13 +935,20 @@ export function leadingNumber(name) {
  * @param {string[]} tags その画像に付いているタグ
  */
 export function recipeOfImage(key, tags = []) {
-  const no = leadingNumber(key);
-  if (no === null) return null;
-  const candidates = RECIPES.filter((r) => r.no === no);
+  const p = parsePhotoName(key);
+  if (!p) return null;
+  const candidates = RECIPES.filter((r) => r.no === p.no);
   if (!candidates.length) return null;
+  // ファイル名に商品が書いてあれば、それが最優先。タグより確かなため。
+  if (p.sku) return candidates.find((r) => r.sku === p.sku) || null;
   if (candidates.length === 1) return candidates[0];
   // 番号が重なるときは商品タグで決める
   return candidates.find((r) => tags.includes(r.sku)) || null;
+}
+
+/** その番号が2商品にまたがっているか（04 はモンスターとソバの両方にある） */
+export function isSharedNumber(no) {
+  return RECIPES.filter((r) => r.no === no).length > 1;
 }
 
 /**
@@ -930,11 +962,26 @@ export function matchRecipePhotos(recipe, stored, tagsByKey = {}) {
   const prefix = recipe.photo ? normalizeForMatch(recipe.photo.prefix) : '';
   const keywords = ((recipe.photo && recipe.photo.keywords) || []).map(normalizeForMatch);
 
-  return stored.filter((item) => {
-    // 番号での照合（実際のレシピ写真はこの形）
+  // 1. ファイル名に商品が書いてあるもの（mon04-1.JPG）。これがあれば、これだけを使う。
+  //    番号が重なるレシピで、タグ頼みの取り違えが起きないようにするため。
+  const explicit = stored.filter((item) => {
+    const p = parsePhotoName(item.key);
+    return p && p.sku === recipe.sku && p.no === recipe.no;
+  });
+  if (explicit.length) return explicit;
+
+  // 2. 番号（＋番号が重なる場合は商品タグ）で決まるもの
+  const byNumber = stored.filter((item) => {
     const hit = recipeOfImage(item.key, tagsByKey[item.key] || []);
-    if (hit && hit.key === recipe.key) return true;
-    // 原稿ファイル名や料理名を含むファイルにも対応しておく
+    return hit && hit.key === recipe.key;
+  });
+  if (byNumber.length) return byNumber;
+
+  // 3. 原稿ファイル名や料理名を含むもの。
+  //    番号の付いた写真は 1・2 で決着済みなので、ここでは拾わない
+  //    （番号が別のレシピのものを、名前の一部が似ているだけで混ぜないため）。
+  return stored.filter((item) => {
+    if (parsePhotoName(item.key)) return false;
     const name = normalizeForMatch(item.key);
     if (prefix && name.includes(prefix)) return true;
     return keywords.some((k) => k && name.includes(k));
@@ -943,8 +990,7 @@ export function matchRecipePhotos(recipe, stored, tagsByKey = {}) {
 
 /** レシピ写真の並び順。材料（-1）→ できあがり（-2）の順に見せる。 */
 export function recipePhotoRole(key) {
-  const base = String(key).replace(/^.*[\\/]/, '');
-  const m = base.match(/^\s*0*\d{1,2}\s*[-_.]\s*(\d)/);
-  if (!m) return '';
-  return m[1] === '1' ? '材料' : m[1] === '2' ? 'できあがり' : '';
+  const p = parsePhotoName(key);
+  if (!p || !p.sub) return '';
+  return p.sub === 1 ? '材料' : p.sub === 2 ? 'できあがり' : '';
 }
